@@ -180,14 +180,6 @@ The release checks verify:
 
 GitHub Actions runs the test and release-verification suite on Python 3.10, 3.11, and 3.12.
 
-## Development and Release History
-
-**Project period: April–July 2026.**
-
-**The initial code was developed locally during this period without a commit-by-commit version history. This repository publishes a curated release of the original codebase.**
-
-Git history begins with the curated release and subsequent maintenance. It does not reconstruct earlier local development or claim that individual components were created on the public commit dates. The [source manifest](docs/source-manifest.json) records hashes of the 11 original core Python files before release preparation.
-
 ## Maintainer and Release Boundary
 
 - Repository maintainer and Git contributor: **Zihan Shen (`Ailta666508`)**.
@@ -198,3 +190,5 @@ Git history begins with the curated release and subsequent maintenance. It does 
 ## License
 
 No open-source license has been assigned to this release. Copyright and reuse permissions remain reserved until the relevant rights holders approve a license.
+
+**Note:** This project was initially developed locally. The Git repository was created when the codebase was prepared for publication, so the early development history is unavailable. Subsequent updates are tracked in this repository.
