@@ -1,0 +1,71 @@
+{
+  "description": "Hashes of the 11 original AutoPersona core Python files copied into this curated release. The bundled, unmodified third-party verl 0.7.0 tree is excluded.",
+  "files": [
+    {
+      "source_path": "__init__.py",
+      "release_path": "autopersona_memory/__init__.py",
+      "sha256": "9bfa905bf27a111162f4f504e439a1bad9e8fd9afa31da3c4a24d998830b1383",
+      "bytes": 1169
+    },
+    {
+      "source_path": "adapters/__init__.py",
+      "release_path": "autopersona_memory/adapters/__init__.py",
+      "sha256": "bda0a59b2e3a2df7df09b8c16febadac8748bf8fedb0b0cee69118927bb10dbc",
+      "bytes": 250
+    },
+    {
+      "source_path": "adapters/persona2web.py",
+      "release_path": "autopersona_memory/adapters/persona2web.py",
+      "sha256": "bb0943331b0ec86b5112c272197e207f92067782015ba95c969e173fc66700ea",
+      "bytes": 1496
+    },
+    {
+      "source_path": "execution.py",
+      "release_path": "autopersona_memory/execution.py",
+      "sha256": "139172b1e3d463ea0348d236bce67db56ecb0bbed97cfa5464bd727397300859",
+      "bytes": 3202
+    },
+    {
+      "source_path": "extraction.py",
+      "release_path": "autopersona_memory/extraction.py",
+      "sha256": "3125191b90b28df32fc08b1b9d7c772a82d48ddab707fbf1e78f744390c579ba",
+      "bytes": 4486
+    },
+    {
+      "source_path": "metrics.py",
+      "release_path": "autopersona_memory/metrics.py",
+      "sha256": "58d0f14dd13d757134d3dba0aaaf9f81b3b101a1cddf45e4ccaa094b1b2121d2",
+      "bytes": 1173
+    },
+    {
+      "source_path": "models.py",
+      "release_path": "autopersona_memory/models.py",
+      "sha256": "7644b71e414ff386f6ecba5a45a7585def31599f1288c5d6650e1a2a97bb67e4",
+      "bytes": 3315
+    },
+    {
+      "source_path": "persona_agent.py",
+      "release_path": "autopersona_memory/persona_agent.py",
+      "sha256": "3a20c98e3f5d276605d27e806f2bdef8bf591a750c808f5fb06e6afcba62bbee",
+      "bytes": 1791
+    },
+    {
+      "source_path": "refinement.py",
+      "release_path": "autopersona_memory/refinement.py",
+      "sha256": "12a848bca5429297b359ff83f446c4634967b2593792915d2651912a4d3dc26e",
+      "bytes": 687
+    },
+    {
+      "source_path": "retrieval.py",
+      "release_path": "autopersona_memory/retrieval.py",
+      "sha256": "3207c42945a901e5885376e5c62b65ec60a2d47b0e44550f8b1b38a8338514d2",
+      "bytes": 1975
+    },
+    {
+      "source_path": "store.py",
+      "release_path": "autopersona_memory/store.py",
+      "sha256": "9a5a466edc2fe7d0c31b699c14ef3964ff81fdd179075e9f0048a2948150d8e8",
+      "bytes": 2328
+    }
+  ]
+}

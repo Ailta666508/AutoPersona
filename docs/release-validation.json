@@ -1,0 +1,18 @@
+{
+  "date": "2026-09-01",
+  "python": "3.12.13",
+  "platform": "Darwin",
+  "architecture": "arm64",
+  "checks": {
+    "original_core_hashes": 11,
+    "unittest_passed": 11,
+    "wheel_build": "passed",
+    "wheel_install": "passed",
+    "installed_package_demo": "passed",
+    "secret_assignment_scan": "no matches",
+    "public_metadata_scan": "no venue, submission-ID, or unpublished-result matches",
+    "research_pdf_excluded": true,
+    "vendor_verl_excluded": true
+  },
+  "scope": "Software and packaging checks only. Manuscript experiments were not reproduced."
+}

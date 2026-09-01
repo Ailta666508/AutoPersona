@@ -1,0 +1,25 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.coverage
+.env
+.env.*
+.idea/
+.vscode/
+.cursor/
+memory/
+runs/
+*.jsonl
+*.log
+
+# Excluded research artifacts and vendor source
+*.pdf
+verl-0.7.0/
+checkpoints/
+results/
