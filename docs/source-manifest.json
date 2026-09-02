@@ -1,11 +1,11 @@
 {
-  "description": "Hashes of the 11 original AutoPersona core Python files copied into this curated release. The bundled, unmodified third-party verl 0.7.0 tree is excluded.",
+  "description": "Hashes of the 11 maintained AutoPersona core Python files in this curated release. Git history preserves the initially published versions; the bundled third-party verl 0.7.0 tree is excluded.",
   "files": [
     {
       "source_path": "__init__.py",
       "release_path": "autopersona_memory/__init__.py",
-      "sha256": "9bfa905bf27a111162f4f504e439a1bad9e8fd9afa31da3c4a24d998830b1383",
-      "bytes": 1169
+      "sha256": "0a78e36ea65c976fc4a768fcc906f410cc5a12a0dfb7739a33f5eb418c8a3b53",
+      "bytes": 1273
     },
     {
       "source_path": "adapters/__init__.py",
@@ -64,8 +64,8 @@
     {
       "source_path": "store.py",
       "release_path": "autopersona_memory/store.py",
-      "sha256": "9a5a466edc2fe7d0c31b699c14ef3964ff81fdd179075e9f0048a2948150d8e8",
-      "bytes": 2328
+      "sha256": "54e6bc2bf39c2d198f877d8d348f899a261975f7b39413679c03fbdd6c166ecb",
+      "bytes": 4363
     }
   ]
 }

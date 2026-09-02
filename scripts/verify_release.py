@@ -1,4 +1,4 @@
-"""Verify research-artifact exclusions, source hashes, and Python syntax."""
+"""Verify research-artifact exclusions, release source hashes, and syntax."""
 
 import ast
 import hashlib
@@ -34,7 +34,7 @@ def main() -> None:
 
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"Verified {len(manifest['files'])} original core files and research-artifact exclusions.")
+    print(f"Verified {len(manifest['files'])} core files and research-artifact exclusions.")
 
 
 if __name__ == "__main__":

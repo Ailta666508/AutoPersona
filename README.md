@@ -172,7 +172,7 @@ docs/
 
 The release checks verify:
 
-- all 11 original core source files against a SHA-256 manifest;
+- all 11 maintained core source files against a SHA-256 manifest;
 - Python syntax and editable installation;
 - 11 deterministic unit tests covering storage, retrieval, updates, clarification, DAG execution, adapters, and metrics;
 - the API-free minimal example;

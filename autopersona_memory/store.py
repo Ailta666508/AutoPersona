@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Iterable
 
@@ -15,6 +17,14 @@ MEMORY_CLASSES = {
 }
 
 
+class MemoryStoreError(RuntimeError):
+    """Raised when persisted memory cannot be read or written safely."""
+
+
+class MemoryStoreCorruptionError(MemoryStoreError):
+    """Raised when a JSONL memory file contains a malformed record."""
+
+
 class JsonlMemoryStore:
     def __init__(self, root: str | Path):
         self.root = Path(root)
@@ -26,17 +36,34 @@ class JsonlMemoryStore:
         if not path.exists():
             return []
         memory_class = MEMORY_CLASSES[memory_type]
-        return [
-            memory_class.from_dict(json.loads(line))
-            for line in path.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError as error:
+            raise MemoryStoreError(f"Unable to read memory file: {path}") from error
+
+        memories = []
+        for line_number, line in enumerate(lines, start=1):
+            if not line.strip():
+                continue
+            try:
+                memories.append(memory_class.from_dict(json.loads(line)))
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+                raise MemoryStoreCorruptionError(
+                    f"Invalid {memory_type} memory record at {path}:{line_number}"
+                ) from error
+        return memories
 
     def add(self, user_id: str, memory_type: MemoryType, memory: Memory) -> None:
         path = self._path(user_id, memory_type)
-        with path.open("a", encoding="utf-8", newline="\n") as stream:
-            stream.write(json.dumps(memory.to_dict(), ensure_ascii=False, sort_keys=True))
-            stream.write("\n")
+        if path.exists():
+            self.list(user_id, memory_type)
+        try:
+            existing = path.read_text(encoding="utf-8") if path.exists() else ""
+        except OSError as error:
+            raise MemoryStoreError(f"Unable to read memory file: {path}") from error
+        row = json.dumps(memory.to_dict(), ensure_ascii=False, sort_keys=True)
+        separator = "" if not existing or existing.endswith("\n") else "\n"
+        self._atomic_write(path, f"{existing}{separator}{row}\n")
 
     def replace(
         self,
@@ -46,7 +73,7 @@ class JsonlMemoryStore:
     ) -> None:
         path = self._path(user_id, memory_type)
         rows = [json.dumps(item.to_dict(), ensure_ascii=False, sort_keys=True) for item in memories]
-        path.write_text("\n".join(rows) + ("\n" if rows else ""), encoding="utf-8")
+        self._atomic_write(path, "\n".join(rows) + ("\n" if rows else ""))
 
     def update(
         self,
@@ -67,3 +94,27 @@ class JsonlMemoryStore:
     def _path(self, user_id: str, memory_type: MemoryType) -> Path:
         safe_user = re.sub(r"[^A-Za-z0-9_.-]+", "_", user_id)
         return self.root / memory_type / f"{safe_user}.jsonl"
+
+    @staticmethod
+    def _atomic_write(path: Path, content: str) -> None:
+        """Replace ``path`` only after a complete same-directory write and fsync."""
+        temporary_path: Path | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                newline="\n",
+                dir=path.parent,
+                prefix=f".{path.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as stream:
+                temporary_path = Path(stream.name)
+                stream.write(content)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary_path, path)
+        except OSError as error:
+            if temporary_path is not None:
+                temporary_path.unlink(missing_ok=True)
+            raise MemoryStoreError(f"Unable to atomically write memory file: {path}") from error

@@ -16,7 +16,7 @@ from .models import (
 from .persona_agent import PersonaAgent
 from .refinement import refine_persona, refine_trajectory, refine_workspace
 from .retrieval import MemoryRetriever
-from .store import JsonlMemoryStore
+from .store import JsonlMemoryStore, MemoryStoreCorruptionError, MemoryStoreError
 
 __all__ = [
     "ClarificationRequest",
@@ -27,6 +27,8 @@ __all__ = [
     "MemoryAwareExecutor",
     "MemoryBundle",
     "MemoryRetriever",
+    "MemoryStoreCorruptionError",
+    "MemoryStoreError",
     "MemoryUpdater",
     "MvpMetrics",
     "PersonaAgent",

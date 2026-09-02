@@ -2,11 +2,14 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from autopersona_memory import (
     JsonlMemoryStore,
     MemoryAwareExecutor,
     MemoryRetriever,
+    MemoryStoreCorruptionError,
+    MemoryStoreError,
     MemoryUpdater,
     MvpMetrics,
     PersonaAgent,
@@ -50,6 +53,35 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.store.delete(user_id, "persona", 0)
         self.assertEqual(self.store.list(user_id, "persona"), [])
         self.assertFalse((Path(self.temp.name) / "user name.jsonl").exists())
+
+    def test_corrupt_jsonl_reports_file_and_line_without_partial_results(self):
+        path = self.store._path("alice", "persona")
+        path.write_text(
+            '{"preference": "valid", "strategy": "keep", "topic": "paper"}\n'
+            '{"preference": "truncated"\n',
+            encoding="utf-8",
+        )
+
+        with self.assertRaisesRegex(
+            MemoryStoreCorruptionError,
+            rf"Invalid persona memory record at {path}:2",
+        ):
+            self.store.list("alice", "persona")
+
+    def test_failed_atomic_replace_preserves_existing_memories(self):
+        original = PersonaMemory("paper", "Open source", "Check code")
+        replacement = PersonaMemory("paper", "Recent", "Check date")
+        self.store.add("alice", "persona", original)
+        path = self.store._path("alice", "persona")
+        before = path.read_bytes()
+
+        with patch("autopersona_memory.store.os.replace", side_effect=OSError("disk error")):
+            with self.assertRaisesRegex(MemoryStoreError, "Unable to atomically write"):
+                self.store.replace("alice", "persona", [replacement])
+
+        self.assertEqual(path.read_bytes(), before)
+        self.assertEqual(self.store.list("alice", "persona"), [original])
+        self.assertEqual(list(path.parent.glob(f".{path.name}.*.tmp")), [])
 
     def test_ingestion_builds_all_three_memory_layers(self):
         updater = MemoryUpdater(
