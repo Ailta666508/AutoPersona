@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml/badge.svg)](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-11%20passing-2ea44f)
+![Tests](https://img.shields.io/badge/tests-15%20passing-2ea44f)
 
 [Overview](#overview) · [Research Experience](#research-experience) · [Architecture](#architecture) · [Code Scope](#code-scope) · [Quick Start](#quick-start)
 
@@ -89,7 +89,8 @@ New workspace and persona items are compared with existing memories and resolved
 - a Persona2Web record adapter;
 - proactive clarification decisions;
 - memory-aware DAG execution and runtime metrics;
-- deterministic, API-free tests and a minimal runnable example.
+- deterministic, API-free tests and a minimal runnable example;
+- an API-free clarification-policy evaluator with per-case retrieval diagnostics.
 
 ### Part of the research, not included here
 
@@ -113,9 +114,10 @@ source .venv/bin/activate
 python -m pip install -e .
 python -m unittest discover -s tests -v
 python examples/minimal_demo.py
+python examples/evaluate_clarification.py
 ```
 
-The demo uses deterministic local stand-ins for embedding, memory resolution, and policy decisions. It does not call an LLM API or reproduce research experiments.
+The examples use deterministic local stand-ins for embedding, memory resolution, and policy decisions. They do not call an LLM API or reproduce research experiments.
 
 ### Core API
 
@@ -162,8 +164,10 @@ autopersona_memory/
   persona_agent.py      # Retrieval and clarify/final decision boundary
   execution.py          # Memory-aware DAG execution
   metrics.py            # Lightweight runtime metrics
+  evaluation.py         # Synthetic clarification-policy evaluation
   adapters/persona2web.py
 examples/minimal_demo.py
+examples/evaluate_clarification.py
 tests/
 docs/
 ```
@@ -172,9 +176,9 @@ docs/
 
 The release checks verify:
 
-- all 11 maintained core source files against a SHA-256 manifest;
+- all 12 maintained core source files against a SHA-256 manifest;
 - Python syntax and editable installation;
-- 11 deterministic unit tests covering storage, retrieval, updates, clarification, DAG execution, adapters, and metrics;
+- 15 deterministic unit tests covering storage, retrieval, updates, clarification, DAG execution, adapters, metrics, and evaluation;
 - the API-free minimal example;
 - exclusion of local credentials, manuscript files, checkpoints, results, and an unrelated vendored `verl` source tree.
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from autopersona_memory import (
+    ClarificationEvaluationCase,
     JsonlMemoryStore,
     MemoryAwareExecutor,
     MemoryRetriever,
@@ -20,6 +21,7 @@ from autopersona_memory import (
     TaskNode,
     TrajectoryMemory,
     WorkspaceMemory,
+    evaluate_clarification_policy,
     ingest_task_history,
 )
 from autopersona_memory.adapters import (
@@ -240,6 +242,50 @@ class AdapterAndMetricsTests(unittest.TestCase):
             "unnecessary_clarifications": 1.0,
             "elapsed_ms": 20.0,
         })
+
+
+class ClarificationEvaluationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        store = JsonlMemoryStore(Path(self.temp.name) / "memory")
+        store.add("known", "persona", PersonaMemory("paper", "Open source", "Check code"))
+        retriever = MemoryRetriever(store, embed)
+        self.agent = PersonaAgent(
+            retriever,
+            lambda query: [{"memory": "persona", "query": query}],
+            lambda task, memories: (
+                {"action": "final", "answer": "use preference"}
+                if memories["persona"]
+                else {"action": "clarify", "question": "Which constraints matter?"}
+            ),
+        )
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def test_evaluator_reports_decisions_and_retrieved_evidence(self):
+        report = evaluate_clarification_policy(
+            self.agent,
+            [
+                ClarificationEvaluationCase(
+                    "known preference", PersonaRequest("known", "paper"), "final"
+                ),
+                ClarificationEvaluationCase(
+                    "missing preference", PersonaRequest("new", "paper"), "clarify"
+                ),
+            ],
+        )
+
+        self.assertEqual(report.accuracy, 1.0)
+        self.assertEqual(report.necessary_clarifications, 1)
+        self.assertEqual(report.unnecessary_clarifications, 0)
+        self.assertEqual(report.missed_clarifications, 0)
+        self.assertEqual(report.results[0].retrieved_counts["persona"], 1)
+        self.assertEqual(report.results[1].retrieved_counts["persona"], 0)
+
+    def test_evaluator_rejects_an_empty_case_set(self):
+        with self.assertRaisesRegex(ValueError, "at least one"):
+            evaluate_clarification_policy(self.agent, [])
 
 
 if __name__ == "__main__":

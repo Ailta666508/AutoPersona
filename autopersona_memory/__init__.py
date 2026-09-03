@@ -1,4 +1,10 @@
 from .execution import ExecutionResult, ExecutionState, MemoryAwareExecutor, TaskNode
+from .evaluation import (
+    ClarificationEvaluationCase,
+    ClarificationEvaluationReport,
+    ClarificationEvaluationResult,
+    evaluate_clarification_policy,
+)
 from .extraction import IngestionResult, MemoryUpdater, ingest_task_history
 from .metrics import MvpMetrics
 from .models import (
@@ -20,6 +26,9 @@ from .store import JsonlMemoryStore, MemoryStoreCorruptionError, MemoryStoreErro
 
 __all__ = [
     "ClarificationRequest",
+    "ClarificationEvaluationCase",
+    "ClarificationEvaluationReport",
+    "ClarificationEvaluationResult",
     "ExecutionResult",
     "ExecutionState",
     "IngestionResult",
@@ -42,6 +51,7 @@ __all__ = [
     "UpdateDecision",
     "WorkspaceMemory",
     "ingest_task_history",
+    "evaluate_clarification_policy",
     "refine_persona",
     "refine_trajectory",
     "refine_workspace",
