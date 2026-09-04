@@ -8,7 +8,7 @@ Qijia Zhuang · Zihan Shen · Rui Liu · Yuxiang Ren
 
 **Research project · April–July 2026**
 
-[![Paper](https://img.shields.io/badge/Paper-PDF-B31B1B?logo=adobeacrobatreader&logoColor=white)](paper/AutoPersona_Preprint.pdf)
+[![Paper](https://img.shields.io/badge/Paper-PDF-B31B1B?logo=adobeacrobatreader&logoColor=white)](https://cdn.jsdelivr.net/gh/Ailta666508/AutoPersona@main/paper/AutoPersona_Preprint.pdf)
 [![CI](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml/badge.svg)](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-17%20passing-2ea44f)
@@ -100,7 +100,7 @@ The paper studies how clarification-reward weighting affects overall performance
 
 ### Included in this repository
 
-- the [AutoPersona preprint](paper/AutoPersona_Preprint.pdf);
+- the [AutoPersona preprint](https://cdn.jsdelivr.net/gh/Ailta666508/AutoPersona@main/paper/AutoPersona_Preprint.pdf) with a browser-readable PDF link;
 - all three paper figures as full-resolution README assets;
 - typed memory models and per-user JSONL persistence;
 - trajectory, workspace, and persona refinement;
