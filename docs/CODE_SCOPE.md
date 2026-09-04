@@ -15,6 +15,7 @@ This note distinguishes the broader AutoPersona research workflow from the softw
 | Persona2Web record conversion | `adapters/persona2web.py` |
 | Runtime counters | `metrics.py` |
 | Research paper | `paper/AutoPersona_Preprint.pdf` |
+| Paper visualizations | `assets/figures/figure-1-motivation.png`, `figure-2-framework.png`, `figure-3-clarification-analysis.png` |
 
 ## Part of the research, not included
 
@@ -28,7 +29,7 @@ This note distinguishes the broader AutoPersona research workflow from the softw
 - scripts that regenerate unpublished tables or figures;
 - venue-specific submission metadata.
 
-The 12-file core package is therefore suitable for inspecting the runtime abstractions and testing memory-aware control flow. The preprint documents the broader research, but the repository is not an artifact-complete scientific reproduction package.
+The 12-file core package is therefore suitable for inspecting the runtime abstractions and testing memory-aware control flow. The preprint documents the broader research, and its three figures are included as README visualizations, but the repository is not an artifact-complete scientific reproduction package.
 
 ## Excluded vendor source
 
@@ -42,10 +43,10 @@ The public core package was initialized from the local implementation and is mai
 
 ## Public release boundary
 
-Apart from the explicitly published preprint, this repository intentionally excludes:
+Apart from the explicitly published preprint and its three extracted figures, this repository intentionally excludes:
 
 1. venue-specific submission files and identifiers;
-2. standalone unpublished result files beyond the preprint;
+2. standalone unpublished result files beyond the preprint and its displayed figures;
 3. benchmark data, model checkpoints, raw predictions, and private logs;
 4. third-party source that is not part of the AutoPersona implementation.
 

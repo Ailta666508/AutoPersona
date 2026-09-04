@@ -8,6 +8,11 @@ from pathlib import Path
 
 PREPRINT_PATH = Path("paper/AutoPersona_Preprint.pdf")
 PREPRINT_SHA256 = "963bebcd4e6fce6c5bbeded9eb6d4f4d1d3cb2e715d2d5a921aae19218686661"
+PAPER_FIGURE_SHA256 = {
+    Path("assets/figures/figure-1-motivation.png"): "4d6f295f3b64d80362e017e094c985ce6b0bd356aa1e75b163b2aafef7c369c0",
+    Path("assets/figures/figure-2-framework.png"): "e6aa012e152b4066b5aaded040d09c1f18d7cc8b99cbe5ae7bd45528dd076807",
+    Path("assets/figures/figure-3-clarification-analysis.png"): "21116aadfa76599a398d4993f3bd775735cdadb43214050c6c016926b2c88ec2",
+}
 
 
 def main() -> None:
@@ -33,6 +38,13 @@ def main() -> None:
     elif hashlib.sha256(preprint.read_bytes()).hexdigest() != PREPRINT_SHA256:
         errors.append(f"Public preprint checksum changed: {PREPRINT_PATH}")
 
+    for figure_path, expected_sha256 in PAPER_FIGURE_SHA256.items():
+        figure = root / figure_path
+        if not figure.is_file():
+            errors.append(f"Missing paper figure: {figure_path}")
+        elif hashlib.sha256(figure.read_bytes()).hexdigest() != expected_sha256:
+            errors.append(f"Paper figure checksum changed: {figure_path}")
+
     forbidden_roots = {"verl-0.7.0", "checkpoints", "results"}
     forbidden_suffixes = {".doc", ".docx"}
     for path in root.rglob("*"):
@@ -51,7 +63,7 @@ def main() -> None:
         raise SystemExit("\n".join(errors))
     print(
         f"Verified {len(manifest['files'])} core files, the public preprint, "
-        "and research-artifact exclusions."
+        f"{len(PAPER_FIGURE_SHA256)} paper figures, and research-artifact exclusions."
     )
 
 

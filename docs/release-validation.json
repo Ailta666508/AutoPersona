@@ -12,8 +12,13 @@
     "secret_assignment_scan": "no matches",
     "public_metadata_scan": "no submission-status, submission-ID, or unpublished-result metadata claims",
     "public_preprint_sha256": "963bebcd4e6fce6c5bbeded9eb6d4f4d1d3cb2e715d2d5a921aae19218686661",
+    "paper_figure_sha256": {
+      "figure-1-motivation.png": "4d6f295f3b64d80362e017e094c985ce6b0bd356aa1e75b163b2aafef7c369c0",
+      "figure-2-framework.png": "e6aa012e152b4066b5aaded040d09c1f18d7cc8b99cbe5ae7bd45528dd076807",
+      "figure-3-clarification-analysis.png": "21116aadfa76599a398d4993f3bd775735cdadb43214050c6c016926b2c88ec2"
+    },
     "other_research_pdfs_excluded": true,
     "vendor_verl_excluded": true
   },
-  "scope": "Software and packaging checks plus preprint integrity. Reported experiments were not independently reproduced during repository validation."
+  "scope": "Software and packaging checks plus preprint and extracted-figure integrity. Reported experiments were not independently reproduced during repository validation."
 }
