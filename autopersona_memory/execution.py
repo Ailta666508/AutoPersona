@@ -43,8 +43,64 @@ class MemoryAwareExecutor:
         runner: Runner,
         additional_tools: list[str] | None = None,
     ) -> ExecutionResult:
+        return self._execute(
+            user_id,
+            query,
+            nodes,
+            runner,
+            additional_tools,
+            initial_outputs={},
+            clarification=None,
+        )
+
+    def resume(
+        self,
+        user_id: str,
+        query: str,
+        nodes: list[TaskNode],
+        runner: Runner,
+        state: ExecutionState,
+        clarification_answer: str,
+        additional_tools: list[str] | None = None,
+    ) -> ExecutionResult:
+        """Continue a paused execution without repeating completed task nodes."""
+
+        answer = clarification_answer.strip()
+        if state.status != "paused" or not state.node or not state.clarification:
+            raise ValueError("resume requires a paused execution state")
+        if not answer:
+            raise ValueError("resume requires a nonempty clarification answer")
+
         ordered = _topological_order(nodes)
-        outputs: dict[str, Any] = {}
+        by_name = {node.name: index for index, node in enumerate(ordered)}
+        if state.node not in by_name:
+            raise ValueError("paused node is not present in the task graph")
+        expected_outputs = {node.name for node in ordered[: by_name[state.node]]}
+        if set(state.outputs) != expected_outputs:
+            raise ValueError("paused outputs do not match completed task nodes")
+
+        return self._execute(
+            user_id,
+            query,
+            nodes,
+            runner,
+            additional_tools,
+            initial_outputs=dict(state.outputs),
+            clarification=(state.node, answer),
+        )
+
+    def _execute(
+        self,
+        user_id: str,
+        query: str,
+        nodes: list[TaskNode],
+        runner: Runner,
+        additional_tools: list[str] | None,
+        initial_outputs: dict[str, Any],
+        clarification: tuple[str, str] | None,
+    ) -> ExecutionResult:
+        ordered = _topological_order(nodes)
+        outputs = dict(initial_outputs)
         dag = {
             "nodes": [
                 {
@@ -57,10 +113,15 @@ class MemoryAwareExecutor:
         }
         tools = list(additional_tools or [])
         for node in ordered:
+            if node.name in outputs:
+                continue
             predecessors = {name: outputs[name] for name in node.dependencies}
+            request_query = f"{query}\n\nCurrent node: {node.instruction}"
+            if clarification and clarification[0] == node.name:
+                request_query += f"\n\nClarification answer: {clarification[1]}"
             request = PersonaRequest(
                 user_id=user_id,
-                query=f"{query}\n\nCurrent node: {node.instruction}",
+                query=request_query,
                 dag=dag,
                 additional_tools=tools,
             )

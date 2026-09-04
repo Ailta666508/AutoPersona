@@ -8,7 +8,7 @@
 
 [![CI](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml/badge.svg)](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-15%20passing-2ea44f)
+![Tests](https://img.shields.io/badge/tests-17%20passing-2ea44f)
 
 [Overview](#overview) · [Research Experience](#research-experience) · [Architecture](#architecture) · [Code Scope](#code-scope) · [Quick Start](#quick-start)
 
@@ -78,6 +78,8 @@ New workspace and persona items are compared with existing memories and resolved
 
 `MemoryAwareExecutor` validates and topologically orders task nodes. Before each node runs, it invokes `PersonaAgent`; predecessor outputs and relevant memories are then passed to the task runner. Execution pauses safely if clarification is required.
 
+A paused `ExecutionState` can be resumed with the user's clarification answer. Completed node outputs are validated and reused, so external tool calls are not repeated.
+
 ## Code Scope
 
 ### Included in this repository
@@ -115,6 +117,7 @@ python -m pip install -e .
 python -m unittest discover -s tests -v
 python examples/minimal_demo.py
 python examples/evaluate_clarification.py
+python examples/resume_after_clarification.py
 ```
 
 The examples use deterministic local stand-ins for embedding, memory resolution, and policy decisions. They do not call an LLM API or reproduce research experiments.
@@ -168,6 +171,7 @@ autopersona_memory/
   adapters/persona2web.py
 examples/minimal_demo.py
 examples/evaluate_clarification.py
+examples/resume_after_clarification.py
 tests/
 docs/
 ```
@@ -178,7 +182,7 @@ The release checks verify:
 
 - all 12 maintained core source files against a SHA-256 manifest;
 - Python syntax and editable installation;
-- 15 deterministic unit tests covering storage, retrieval, updates, clarification, DAG execution, adapters, metrics, and evaluation;
+- 17 deterministic unit tests covering storage, retrieval, updates, clarification, resumable DAG execution, adapters, metrics, and evaluation;
 - the API-free minimal example;
 - exclusion of local credentials, manuscript files, checkpoints, results, and an unrelated vendored `verl` source tree.
 

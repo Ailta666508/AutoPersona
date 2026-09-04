@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from autopersona_memory import (
     ClarificationEvaluationCase,
+    ExecutionState,
     JsonlMemoryStore,
     MemoryAwareExecutor,
     MemoryRetriever,
@@ -213,7 +214,57 @@ class AgentAndExecutionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "cycle or missing dependency"):
             executor.execute("alice", "task", [TaskNode("a", "A", ["unknown"])], lambda *args: None)
 
+    def test_executor_resumes_without_repeating_completed_nodes(self):
+        def decide(task, memories):
+            query = task["query"]
+            if "Current node: Write notes" in query and "Clarification answer:" not in query:
+                return {"action": "clarify", "question": "Which citation style?"}
+            return {"action": "final", "answer": "continue"}
 
+        agent = PersonaAgent(self.retriever, self.search, decide)
+        executor = MemoryAwareExecutor(agent)
+        nodes = [
+            TaskNode("search", "Search papers"),
+            TaskNode("write", "Write notes", ["search"]),
+        ]
+        calls = []
+        first = executor.execute(
+            "alice",
+            "Prepare research notes",
+            nodes,
+            lambda instruction, memories, predecessors, tools: calls.append(instruction)
+            or instruction,
+        )
+
+        self.assertEqual(first.state.status, "paused")
+        self.assertEqual(first.state.outputs, {"search": "Search papers"})
+        resumed = executor.resume(
+            "alice",
+            "Prepare research notes",
+            nodes,
+            lambda instruction, memories, predecessors, tools: calls.append(instruction)
+            or {"instruction": instruction, "predecessors": predecessors},
+            first.state,
+            "Use APA style",
+        )
+
+        self.assertEqual(resumed.state.status, "completed")
+        self.assertEqual(calls, ["Search papers", "Write notes"])
+        self.assertEqual(resumed.output["predecessors"], {"search": "Search papers"})
+
+    def test_executor_rejects_invalid_resume_state(self):
+        agent = PersonaAgent(self.retriever, self.search, lambda task, memories: {"action": "final"})
+        executor = MemoryAwareExecutor(agent)
+        nodes = [TaskNode("search", "Search papers")]
+        with self.assertRaisesRegex(ValueError, "paused execution state"):
+            executor.resume(
+                "alice",
+                "query",
+                nodes,
+                lambda *args: None,
+                ExecutionState(status="completed"),
+                "answer",
+            )
 class AdapterAndMetricsTests(unittest.TestCase):
     def test_persona2web_adapter_preserves_history_and_request(self):
         with tempfile.TemporaryDirectory() as directory:
