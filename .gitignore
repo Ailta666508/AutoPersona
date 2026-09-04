@@ -20,6 +20,7 @@ runs/
 
 # Excluded research artifacts and vendor source
 *.pdf
+!paper/AutoPersona_Preprint.pdf
 verl-0.7.0/
 checkpoints/
 results/

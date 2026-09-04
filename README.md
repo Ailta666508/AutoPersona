@@ -10,12 +10,9 @@
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-17%20passing-2ea44f)
 
-[Overview](#overview) · [Research Experience](#research-experience) · [Architecture](#architecture) · [Code Scope](#code-scope) · [Quick Start](#quick-start)
+[Paper](paper/AutoPersona_Preprint.pdf) · [Overview](#overview) · [Research Experience](#research-experience) · [Architecture](#architecture) · [Code Scope](#code-scope) · [Quick Start](#quick-start)
 
 </div>
-
-> [!NOTE]
-> This repository publishes a curated reference implementation of the memory and task-execution runtime developed during the project. It does not include a manuscript, submission metadata, unpublished result tables, model checkpoints, benchmark data, or the complete training and evaluation stack.
 
 ## Overview
 
@@ -84,6 +81,7 @@ A paused `ExecutionState` can be resumed with the user's clarification answer. C
 
 ### Included in this repository
 
+- the [AutoPersona preprint](paper/AutoPersona_Preprint.pdf);
 - typed memory models and per-user JSONL persistence;
 - trajectory, workspace, and persona refinement;
 - embedding-based retrieval separated by memory layer;
@@ -184,16 +182,17 @@ The release checks verify:
 - Python syntax and editable installation;
 - 17 deterministic unit tests covering storage, retrieval, updates, clarification, resumable DAG execution, adapters, metrics, and evaluation;
 - the API-free minimal example;
-- exclusion of local credentials, manuscript files, checkpoints, results, and an unrelated vendored `verl` source tree.
+- integrity verification for the allowlisted preprint and exclusion of local credentials, other document artifacts, checkpoints, results, and an unrelated vendored `verl` source tree.
 
 GitHub Actions runs the test and release-verification suite on Python 3.10, 3.11, and 3.12.
 
 ## Maintainer and Release Boundary
 
 - Repository maintainer and Git contributor: **Zihan Shen (`Ailta666508`)**.
-- No manuscript or submission identifier is included in this repository.
-- No unpublished numerical results are included or claimed as reproduced.
-- The full research author list and publication metadata should be added only when an appropriate public citation becomes available.
+- The included preprint is authored by **Qijia Zhuang, Zihan Shen, Rui Liu, and Yuxiang Ren**; please credit all authors when citing the research.
+- No venue name or submission identifier is asserted by this repository.
+- No standalone result tables, raw predictions, or claims of independent reproduction are included.
+- Venue, DOI, and final citation details can be added when an appropriate public record becomes available.
 
 ## License
 

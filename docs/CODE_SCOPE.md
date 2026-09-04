@@ -14,6 +14,7 @@ This note distinguishes the broader AutoPersona research workflow from the softw
 | Dependency-aware personalized execution | `execution.py` |
 | Persona2Web record conversion | `adapters/persona2web.py` |
 | Runtime counters | `metrics.py` |
+| Research paper | `paper/AutoPersona_Preprint.pdf` |
 
 ## Part of the research, not included
 
@@ -25,9 +26,9 @@ This note distinguishes the broader AutoPersona research workflow from the softw
 - external executor and judge-model integrations;
 - experiment configurations, checkpoints, raw predictions, or statistical analysis;
 - scripts that regenerate unpublished tables or figures;
-- the research manuscript and submission metadata.
+- venue-specific submission metadata.
 
-The 11-file core package is therefore suitable for inspecting the runtime abstractions and testing memory-aware control flow. It is not an artifact-complete scientific reproduction package.
+The 12-file core package is therefore suitable for inspecting the runtime abstractions and testing memory-aware control flow. The preprint documents the broader research, but the repository is not an artifact-complete scientific reproduction package.
 
 ## Excluded vendor source
 
@@ -37,16 +38,15 @@ If training code is added later, declare the supported upstream `verl` version a
 
 ## Curated release preparation
 
-The original core files are copied byte-for-byte under `autopersona_memory/`. New release material consists of package metadata, English documentation, tests, a deterministic example, ignore rules, continuous integration, and release-verification scripts. The original hashes are recorded in `source-manifest.json`.
+The public core package was initialized from the local implementation and is maintained under `autopersona_memory/`. Release material also includes the preprint, package metadata, English documentation, tests, deterministic examples, ignore rules, continuous integration, and release-verification scripts. Current maintained source hashes are recorded in `source-manifest.json`, while Git history preserves each public revision.
 
 ## Public release boundary
 
-This repository intentionally excludes:
+Apart from the explicitly published preprint, this repository intentionally excludes:
 
-1. manuscript and submission files;
-2. venue names and submission identifiers;
-3. unpublished numerical results and result tables;
-4. benchmark data, model checkpoints, raw predictions, and private logs;
-5. third-party source that is not part of the AutoPersona implementation.
+1. venue-specific submission files and identifiers;
+2. standalone unpublished result files beyond the preprint;
+3. benchmark data, model checkpoints, raw predictions, and private logs;
+4. third-party source that is not part of the AutoPersona implementation.
 
-Future releases should preserve this boundary until an appropriate public citation and rights-cleared research artifact are available.
+Future releases should keep the public paper, code, and experimental-artifact boundaries explicit as additional materials become available.

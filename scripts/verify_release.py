@@ -6,6 +6,10 @@ import json
 from pathlib import Path
 
 
+PREPRINT_PATH = Path("paper/AutoPersona_Preprint.pdf")
+PREPRINT_SHA256 = "963bebcd4e6fce6c5bbeded9eb6d4f4d1d3cb2e715d2d5a921aae19218686661"
+
+
 def main() -> None:
     root = Path(__file__).resolve().parents[1]
     manifest = json.loads((root / "docs/source-manifest.json").read_text())
@@ -23,18 +27,32 @@ def main() -> None:
         except SyntaxError as error:
             errors.append(f"Syntax error: {entry['release_path']}: {error}")
 
+    preprint = root / PREPRINT_PATH
+    if not preprint.is_file():
+        errors.append(f"Missing public preprint: {PREPRINT_PATH}")
+    elif hashlib.sha256(preprint.read_bytes()).hexdigest() != PREPRINT_SHA256:
+        errors.append(f"Public preprint checksum changed: {PREPRINT_PATH}")
+
     forbidden_roots = {"verl-0.7.0", "checkpoints", "results"}
-    forbidden_suffixes = {".pdf", ".doc", ".docx"}
+    forbidden_suffixes = {".doc", ".docx"}
     for path in root.rglob("*"):
         if ".git" in path.parts or not path.is_file():
             continue
         rel = path.relative_to(root)
-        if rel.parts[0] in forbidden_roots or path.suffix.lower() in forbidden_suffixes:
+        unexpected_pdf = path.suffix.lower() == ".pdf" and rel != PREPRINT_PATH
+        if (
+            rel.parts[0] in forbidden_roots
+            or path.suffix.lower() in forbidden_suffixes
+            or unexpected_pdf
+        ):
             errors.append(f"Excluded artifact present: {rel}")
 
     if errors:
         raise SystemExit("\n".join(errors))
-    print(f"Verified {len(manifest['files'])} core files and research-artifact exclusions.")
+    print(
+        f"Verified {len(manifest['files'])} core files, the public preprint, "
+        "and research-artifact exclusions."
+    )
 
 
 if __name__ == "__main__":
