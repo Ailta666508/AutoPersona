@@ -200,7 +200,7 @@ The release checks verify:
 
 - all 12 maintained core source files against a SHA-256 manifest;
 - Python syntax and editable installation;
-- 17 deterministic unit tests covering storage, retrieval, updates, clarification, resumable DAG execution, adapters, metrics, and evaluation;
+- 18 deterministic unit tests covering atomic and concurrent storage, retrieval, updates, clarification, resumable DAG execution, adapters, metrics, and evaluation;
 - the API-free minimal example;
 - integrity verification for the allowlisted preprint and its three extracted figures, plus exclusion of local credentials, other document artifacts, checkpoints, results, and an unrelated vendored `verl` source tree.
 

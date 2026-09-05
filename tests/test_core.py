@@ -1,6 +1,7 @@
 import json
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import patch
 
@@ -85,6 +86,21 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.assertEqual(path.read_bytes(), before)
         self.assertEqual(self.store.list("alice", "persona"), [original])
         self.assertEqual(list(path.parent.glob(f".{path.name}.*.tmp")), [])
+
+    def test_concurrent_adds_do_not_lose_memory_records(self):
+        def add_record(index: int) -> None:
+            self.store.add(
+                "alice",
+                "persona",
+                PersonaMemory("paper", f"preference-{index}", f"strategy-{index}"),
+            )
+
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            list(executor.map(add_record, range(24)))
+
+        memories = self.store.list("alice", "persona")
+        self.assertEqual(len(memories), 24)
+        self.assertEqual({memory.preference for memory in memories}, {f"preference-{i}" for i in range(24)})
 
     def test_ingestion_builds_all_three_memory_layers(self):
         updater = MemoryUpdater(
