@@ -5,8 +5,14 @@ import os
 import re
 import tempfile
 import threading
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable
+from typing import IO, Iterable, Iterator
+
+try:
+    import fcntl
+except ImportError:  # pragma: no cover - Windows falls back to the process lock.
+    fcntl = None
 
 from .models import Memory, MemoryType, PersonaMemory, TrajectoryMemory, WorkspaceMemory
 
@@ -62,15 +68,16 @@ class JsonlMemoryStore:
     def add(self, user_id: str, memory_type: MemoryType, memory: Memory) -> None:
         with self._lock:
             path = self._path(user_id, memory_type)
-            if path.exists():
-                self.list(user_id, memory_type)
-            try:
-                existing = path.read_text(encoding="utf-8") if path.exists() else ""
-            except OSError as error:
-                raise MemoryStoreError(f"Unable to read memory file: {path}") from error
-            row = json.dumps(memory.to_dict(), ensure_ascii=False, sort_keys=True)
-            separator = "" if not existing or existing.endswith("\n") else "\n"
-            self._atomic_write(path, f"{existing}{separator}{row}\n")
+            with self._file_lock(path):
+                if path.exists():
+                    self.list(user_id, memory_type)
+                try:
+                    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+                except OSError as error:
+                    raise MemoryStoreError(f"Unable to read memory file: {path}") from error
+                row = json.dumps(memory.to_dict(), ensure_ascii=False, sort_keys=True)
+                separator = "" if not existing or existing.endswith("\n") else "\n"
+                self._atomic_write(path, f"{existing}{separator}{row}\n")
 
     def replace(
         self,
@@ -80,8 +87,8 @@ class JsonlMemoryStore:
     ) -> None:
         with self._lock:
             path = self._path(user_id, memory_type)
-            rows = [json.dumps(item.to_dict(), ensure_ascii=False, sort_keys=True) for item in memories]
-            self._atomic_write(path, "\n".join(rows) + ("\n" if rows else ""))
+            with self._file_lock(path):
+                self._replace_unlocked(path, memories)
 
     def update(
         self,
@@ -91,19 +98,48 @@ class JsonlMemoryStore:
         memory: Memory,
     ) -> None:
         with self._lock:
-            memories = self.list(user_id, memory_type)
-            memories[index] = memory
-            self.replace(user_id, memory_type, memories)
+            path = self._path(user_id, memory_type)
+            with self._file_lock(path):
+                memories = self.list(user_id, memory_type)
+                memories[index] = memory
+                self._replace_unlocked(path, memories)
 
     def delete(self, user_id: str, memory_type: MemoryType, index: int) -> None:
         with self._lock:
-            memories = self.list(user_id, memory_type)
-            del memories[index]
-            self.replace(user_id, memory_type, memories)
+            path = self._path(user_id, memory_type)
+            with self._file_lock(path):
+                memories = self.list(user_id, memory_type)
+                del memories[index]
+                self._replace_unlocked(path, memories)
 
     def _path(self, user_id: str, memory_type: MemoryType) -> Path:
         safe_user = re.sub(r"[^A-Za-z0-9_.-]+", "_", user_id)
         return self.root / memory_type / f"{safe_user}.jsonl"
+
+    @staticmethod
+    @contextmanager
+    def _file_lock(path: Path) -> Iterator[IO[str]]:
+        """Coordinate writers that use separate store instances on Unix hosts."""
+        lock_path = path.with_name(f".{path.name}.lock")
+        try:
+            stream = lock_path.open("a", encoding="utf-8")
+        except OSError as error:
+            raise MemoryStoreError(f"Unable to open memory lock file: {lock_path}") from error
+        try:
+            if fcntl is not None:
+                fcntl.flock(stream.fileno(), fcntl.LOCK_EX)
+            yield stream
+        except OSError as error:
+            raise MemoryStoreError(f"Unable to lock memory file: {path}") from error
+        finally:
+            if fcntl is not None:
+                fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
+            stream.close()
+
+    @staticmethod
+    def _replace_unlocked(path: Path, memories: Iterable[Memory]) -> None:
+        rows = [json.dumps(item.to_dict(), ensure_ascii=False, sort_keys=True) for item in memories]
+        JsonlMemoryStore._atomic_write(path, "\n".join(rows) + ("\n" if rows else ""))
 
     @staticmethod
     def _atomic_write(path: Path, content: str) -> None:

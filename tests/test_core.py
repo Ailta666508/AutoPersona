@@ -87,9 +87,14 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.assertEqual(self.store.list("alice", "persona"), [original])
         self.assertEqual(list(path.parent.glob(f".{path.name}.*.tmp")), [])
 
-    def test_concurrent_adds_do_not_lose_memory_records(self):
+    def test_separate_store_instances_do_not_lose_concurrent_adds(self):
+        stores = [
+            self.store,
+            JsonlMemoryStore(Path(self.temp.name) / "memory"),
+        ]
+
         def add_record(index: int) -> None:
-            self.store.add(
+            stores[index % len(stores)].add(
                 "alice",
                 "persona",
                 PersonaMemory("paper", f"preference-{index}", f"strategy-{index}"),
