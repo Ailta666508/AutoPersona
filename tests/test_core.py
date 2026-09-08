@@ -154,6 +154,27 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.assertEqual(len(bundle.persona), 1)
         self.assertEqual(bundle.workspace, [])
 
+    def test_retrieval_rejects_nonpositive_top_k(self):
+        retriever = MemoryRetriever(self.store, embed)
+        with self.assertRaisesRegex(ValueError, "top_k must be a positive integer"):
+            retriever.retrieve("alice", [], top_k=0)
+
+    def test_retrieval_rejects_mismatched_embedding_dimensions(self):
+        self.store.add("alice", "persona", PersonaMemory("paper", "Open source", "Check code"))
+
+        def mismatched_embed(text):
+            return [1.0] if text == "query" else [1.0, 0.0]
+
+        retriever = MemoryRetriever(self.store, mismatched_embed)
+        with self.assertRaisesRegex(ValueError, "embedding dimensions must match"):
+            retriever.retrieve("alice", [SearchRequest("persona", "query")])
+
+    def test_retrieval_rejects_nonfinite_embeddings(self):
+        self.store.add("alice", "persona", PersonaMemory("paper", "Open source", "Check code"))
+        retriever = MemoryRetriever(self.store, lambda text: [float("nan")])
+        with self.assertRaisesRegex(ValueError, "embedding values must be finite"):
+            retriever.retrieve("alice", [SearchRequest("persona", "query")])
+
 
 class AgentAndExecutionTests(unittest.TestCase):
     def setUp(self):

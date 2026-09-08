@@ -22,6 +22,8 @@ class MemoryRetriever:
         searches: list[SearchRequest],
         top_k: int = 3,
     ) -> MemoryBundle:
+        if top_k < 1:
+            raise ValueError("top_k must be a positive integer")
         selected: dict[MemoryType, list[Memory]] = {
             "trajectory": [],
             "workspace": [],
@@ -50,8 +52,14 @@ def _text(memory: Memory) -> str:
 
 
 def _cosine(left: Sequence[float], right: Sequence[float]) -> float:
-    if not left or not right or len(left) != len(right):
+    if len(left) != len(right):
+        raise ValueError(
+            f"embedding dimensions must match: query={len(left)}, memory={len(right)}"
+        )
+    if not left or not right:
         return 0.0
+    if not all(math.isfinite(value) for value in (*left, *right)):
+        raise ValueError("embedding values must be finite")
     numerator = sum(a * b for a, b in zip(left, right))
     left_norm = math.sqrt(sum(value * value for value in left))
     right_norm = math.sqrt(sum(value * value for value in right))
