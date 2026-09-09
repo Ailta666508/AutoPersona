@@ -143,7 +143,7 @@ class JsonlMemoryStore:
 
     @staticmethod
     def _atomic_write(path: Path, content: str) -> None:
-        """Replace ``path`` only after a complete same-directory write and fsync."""
+        """Replace ``path`` only after syncing the file and its directory entry."""
         temporary_path: Path | None = None
         try:
             with tempfile.NamedTemporaryFile(
@@ -160,7 +160,23 @@ class JsonlMemoryStore:
                 stream.flush()
                 os.fsync(stream.fileno())
             os.replace(temporary_path, path)
+            temporary_path = None
+            JsonlMemoryStore._fsync_directory(path.parent)
         except OSError as error:
             if temporary_path is not None:
-                temporary_path.unlink(missing_ok=True)
+                try:
+                    temporary_path.unlink(missing_ok=True)
+                except OSError:
+                    pass
             raise MemoryStoreError(f"Unable to atomically write memory file: {path}") from error
+
+    @staticmethod
+    def _fsync_directory(directory: Path) -> None:
+        """Persist the rename metadata on platforms that support directory fsync."""
+        if os.name == "nt":  # pragma: no cover - directory descriptors are Unix-specific.
+            return
+        descriptor = os.open(directory, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)

@@ -87,6 +87,17 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.assertEqual(self.store.list("alice", "persona"), [original])
         self.assertEqual(list(path.parent.glob(f".{path.name}.*.tmp")), [])
 
+    def test_atomic_replace_syncs_the_parent_directory(self):
+        memory = PersonaMemory("paper", "Open source", "Check code")
+
+        with patch.object(JsonlMemoryStore, "_fsync_directory") as sync_directory:
+            self.store.replace("alice", "persona", [memory])
+
+        sync_directory.assert_called_once_with(
+            self.store._path("alice", "persona").parent
+        )
+        self.assertEqual(self.store.list("alice", "persona"), [memory])
+
     def test_separate_store_instances_do_not_lose_concurrent_adds(self):
         stores = [
             self.store,
