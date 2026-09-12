@@ -384,8 +384,35 @@ class ClarificationEvaluationTests(unittest.TestCase):
         self.assertEqual(report.necessary_clarifications, 1)
         self.assertEqual(report.unnecessary_clarifications, 0)
         self.assertEqual(report.missed_clarifications, 0)
+        self.assertEqual(report.correct_final_responses, 1)
+        self.assertEqual(report.clarification_precision, 1.0)
+        self.assertEqual(report.clarification_recall, 1.0)
         self.assertEqual(report.results[0].retrieved_counts["persona"], 1)
         self.assertEqual(report.results[1].retrieved_counts["persona"], 0)
+
+    def test_evaluator_reports_clarification_precision_and_recall(self):
+        report = evaluate_clarification_policy(
+            self.agent,
+            [
+                ClarificationEvaluationCase(
+                    "true positive", PersonaRequest("new", "paper"), "clarify"
+                ),
+                ClarificationEvaluationCase(
+                    "false positive", PersonaRequest("new", "paper"), "final"
+                ),
+                ClarificationEvaluationCase(
+                    "false negative", PersonaRequest("known", "paper"), "clarify"
+                ),
+                ClarificationEvaluationCase(
+                    "true negative", PersonaRequest("known", "paper"), "final"
+                ),
+            ],
+        )
+
+        self.assertEqual(report.accuracy, 0.5)
+        self.assertEqual(report.clarification_precision, 0.5)
+        self.assertEqual(report.clarification_recall, 0.5)
+        self.assertEqual(report.to_dict()["correct_final_responses"], 1)
 
     def test_evaluator_rejects_an_empty_case_set(self):
         with self.assertRaisesRegex(ValueError, "at least one"):

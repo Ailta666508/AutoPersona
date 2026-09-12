@@ -44,6 +44,10 @@ class ClarificationEvaluationResult:
 class ClarificationEvaluationReport:
     results: tuple[ClarificationEvaluationResult, ...]
 
+    @staticmethod
+    def _ratio(numerator: int, denominator: int) -> float:
+        return numerator / denominator if denominator else 0.0
+
     @property
     def accuracy(self) -> float:
         return sum(result.correct for result in self.results) / len(self.results)
@@ -69,6 +73,31 @@ class ClarificationEvaluationReport:
             for result in self.results
         )
 
+    @property
+    def correct_final_responses(self) -> int:
+        return sum(
+            result.expected_action == "final" and result.actual_action == "final"
+            for result in self.results
+        )
+
+    @property
+    def clarification_precision(self) -> float:
+        """Fraction of clarification requests that were labeled as necessary."""
+
+        return self._ratio(
+            self.necessary_clarifications,
+            self.necessary_clarifications + self.unnecessary_clarifications,
+        )
+
+    @property
+    def clarification_recall(self) -> float:
+        """Fraction of required clarifications that the policy requested."""
+
+        return self._ratio(
+            self.necessary_clarifications,
+            self.necessary_clarifications + self.missed_clarifications,
+        )
+
     def to_dict(self) -> dict[str, object]:
         return {
             "case_count": len(self.results),
@@ -76,6 +105,9 @@ class ClarificationEvaluationReport:
             "necessary_clarifications": self.necessary_clarifications,
             "unnecessary_clarifications": self.unnecessary_clarifications,
             "missed_clarifications": self.missed_clarifications,
+            "correct_final_responses": self.correct_final_responses,
+            "clarification_precision": self.clarification_precision,
+            "clarification_recall": self.clarification_recall,
             "cases": [result.to_dict() for result in self.results],
         }
 

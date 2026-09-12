@@ -11,7 +11,7 @@ Qijia Zhuang · Zihan Shen · Rui Liu · Yuxiang Ren
 [![Paper](https://img.shields.io/badge/Paper-PDF-B31B1B?logo=adobeacrobatreader&logoColor=white)](https://cdn.jsdelivr.net/gh/Ailta666508/AutoPersona@main/paper/AutoPersona_Preprint.pdf)
 [![CI](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml/badge.svg)](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-22%20passing-2ea44f)
+![Tests](https://img.shields.io/badge/tests-23%20passing-2ea44f)
 
 [Overview](#overview) · [Motivation](#motivation) · [Method](#method) · [Analysis](#clarification-analysis) · [Code Scope](#code-scope) · [Quick Start](#quick-start)
 
@@ -110,7 +110,7 @@ The paper studies how clarification-reward weighting affects overall performance
 - proactive clarification decisions;
 - memory-aware DAG execution and runtime metrics;
 - deterministic, API-free tests and a minimal runnable example;
-- an API-free clarification-policy evaluator with per-case retrieval diagnostics.
+- an API-free clarification-policy evaluator with per-case retrieval diagnostics, precision, and recall.
 
 ### Part of the research, not included here
 
@@ -200,7 +200,7 @@ The release checks verify:
 
 - all 12 maintained core source files against a SHA-256 manifest;
 - Python syntax and editable installation;
-- 22 deterministic unit tests covering crash-durable and concurrent storage, validated retrieval inputs, updates, clarification, resumable DAG execution, adapters, metrics, and evaluation;
+- 23 deterministic unit tests covering crash-durable and concurrent storage, validated retrieval inputs, updates, clarification, resumable DAG execution, adapters, metrics, and evaluation;
 - the API-free minimal example;
 - integrity verification for the allowlisted preprint and its three extracted figures, plus exclusion of local credentials, other document artifacts, checkpoints, results, and an unrelated vendored `verl` source tree.
 
