@@ -17,6 +17,7 @@ class ClarificationEvaluationCase:
     name: str
     request: PersonaRequest
     expected_action: AgentAction
+    expected_memory_types: tuple[MemoryType, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -24,11 +25,20 @@ class ClarificationEvaluationResult:
     name: str
     expected_action: AgentAction
     actual_action: AgentAction
+    expected_memory_types: tuple[MemoryType, ...]
     retrieved_counts: dict[MemoryType, int]
 
     @property
     def correct(self) -> bool:
         return self.expected_action == self.actual_action
+
+    @property
+    def missing_expected_memory_types(self) -> tuple[MemoryType, ...]:
+        return tuple(
+            memory_type
+            for memory_type in self.expected_memory_types
+            if self.retrieved_counts[memory_type] == 0
+        )
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -36,6 +46,8 @@ class ClarificationEvaluationResult:
             "expected_action": self.expected_action,
             "actual_action": self.actual_action,
             "correct": self.correct,
+            "expected_memory_types": list(self.expected_memory_types),
+            "missing_expected_memory_types": list(self.missing_expected_memory_types),
             "retrieved_counts": dict(self.retrieved_counts),
         }
 
@@ -106,6 +118,14 @@ class ClarificationEvaluationReport:
         recall = self.clarification_recall
         return self._ratio(2 * precision * recall, precision + recall)
 
+    @property
+    def retrieval_coverage(self) -> float:
+        """Fraction of labeled memory layers that supplied retrieved evidence."""
+
+        expected = sum(len(result.expected_memory_types) for result in self.results)
+        missing = sum(len(result.missing_expected_memory_types) for result in self.results)
+        return self._ratio(expected - missing, expected)
+
     def to_dict(self) -> dict[str, object]:
         return {
             "case_count": len(self.results),
@@ -117,6 +137,7 @@ class ClarificationEvaluationReport:
             "clarification_precision": self.clarification_precision,
             "clarification_recall": self.clarification_recall,
             "clarification_f1": self.clarification_f1,
+            "retrieval_coverage": self.retrieval_coverage,
             "cases": [result.to_dict() for result in self.results],
         }
 
@@ -138,6 +159,7 @@ def evaluate_clarification_policy(
                 name=case.name,
                 expected_action=case.expected_action,
                 actual_action=decision.action,
+                expected_memory_types=case.expected_memory_types,
                 retrieved_counts={
                     "trajectory": len(decision.memories.trajectory),
                     "workspace": len(decision.memories.workspace),

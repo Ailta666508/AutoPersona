@@ -49,6 +49,7 @@ def main() -> None:
                     "retrieved preference",
                     PersonaRequest("known-user", "Recommend an open-source paper"),
                     "final",
+                    expected_memory_types=("persona",),
                 ),
                 ClarificationEvaluationCase(
                     "missing preference",

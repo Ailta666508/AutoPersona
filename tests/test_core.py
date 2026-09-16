@@ -372,7 +372,10 @@ class ClarificationEvaluationTests(unittest.TestCase):
             self.agent,
             [
                 ClarificationEvaluationCase(
-                    "known preference", PersonaRequest("known", "paper"), "final"
+                    "known preference",
+                    PersonaRequest("known", "paper"),
+                    "final",
+                    expected_memory_types=("persona",),
                 ),
                 ClarificationEvaluationCase(
                     "missing preference", PersonaRequest("new", "paper"), "clarify"
@@ -388,8 +391,10 @@ class ClarificationEvaluationTests(unittest.TestCase):
         self.assertEqual(report.clarification_precision, 1.0)
         self.assertEqual(report.clarification_recall, 1.0)
         self.assertEqual(report.clarification_f1, 1.0)
+        self.assertEqual(report.retrieval_coverage, 1.0)
         self.assertEqual(report.results[0].retrieved_counts["persona"], 1)
         self.assertEqual(report.results[1].retrieved_counts["persona"], 0)
+        self.assertEqual(report.results[0].missing_expected_memory_types, ())
 
     def test_evaluator_reports_clarification_precision_and_recall(self):
         report = evaluate_clarification_policy(
@@ -433,6 +438,33 @@ class ClarificationEvaluationTests(unittest.TestCase):
         self.assertEqual(report.clarification_precision, 0.0)
         self.assertEqual(report.clarification_recall, 0.0)
         self.assertEqual(report.clarification_f1, 0.0)
+
+    def test_evaluator_reports_missing_expected_memory_layers(self):
+        report = evaluate_clarification_policy(
+            self.agent,
+            [
+                ClarificationEvaluationCase(
+                    "persona hit",
+                    PersonaRequest("known", "paper"),
+                    "final",
+                    expected_memory_types=("persona",),
+                ),
+                ClarificationEvaluationCase(
+                    "workspace miss",
+                    PersonaRequest("known", "paper"),
+                    "final",
+                    expected_memory_types=("persona", "workspace"),
+                ),
+            ],
+        )
+
+        self.assertEqual(report.retrieval_coverage, 2 / 3)
+        self.assertEqual(report.results[1].missing_expected_memory_types, ("workspace",))
+        self.assertEqual(report.to_dict()["retrieval_coverage"], 2 / 3)
+        self.assertEqual(
+            report.to_dict()["cases"][1]["missing_expected_memory_types"],
+            ["workspace"],
+        )
 
     def test_evaluator_rejects_an_empty_case_set(self):
         with self.assertRaisesRegex(ValueError, "at least one"):
