@@ -45,7 +45,7 @@ class ClarificationEvaluationReport:
     results: tuple[ClarificationEvaluationResult, ...]
 
     @staticmethod
-    def _ratio(numerator: int, denominator: int) -> float:
+    def _ratio(numerator: float, denominator: float) -> float:
         return numerator / denominator if denominator else 0.0
 
     @property
@@ -98,6 +98,14 @@ class ClarificationEvaluationReport:
             self.necessary_clarifications + self.missed_clarifications,
         )
 
+    @property
+    def clarification_f1(self) -> float:
+        """Balance clarification precision and recall in one decision metric."""
+
+        precision = self.clarification_precision
+        recall = self.clarification_recall
+        return self._ratio(2 * precision * recall, precision + recall)
+
     def to_dict(self) -> dict[str, object]:
         return {
             "case_count": len(self.results),
@@ -108,6 +116,7 @@ class ClarificationEvaluationReport:
             "correct_final_responses": self.correct_final_responses,
             "clarification_precision": self.clarification_precision,
             "clarification_recall": self.clarification_recall,
+            "clarification_f1": self.clarification_f1,
             "cases": [result.to_dict() for result in self.results],
         }
 
