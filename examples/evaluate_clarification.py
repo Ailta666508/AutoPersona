@@ -55,6 +55,7 @@ def main() -> None:
                     "missing preference",
                     PersonaRequest("new-user", "Recommend a paper"),
                     "clarify",
+                    expected_memory_types=(),
                 ),
             ],
         )

@@ -17,7 +17,7 @@ class ClarificationEvaluationCase:
     name: str
     request: PersonaRequest
     expected_action: AgentAction
-    expected_memory_types: tuple[MemoryType, ...] = ()
+    expected_memory_types: tuple[MemoryType, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -25,7 +25,7 @@ class ClarificationEvaluationResult:
     name: str
     expected_action: AgentAction
     actual_action: AgentAction
-    expected_memory_types: tuple[MemoryType, ...]
+    expected_memory_types: tuple[MemoryType, ...] | None
     retrieved_counts: dict[MemoryType, int]
 
     @property
@@ -34,10 +34,22 @@ class ClarificationEvaluationResult:
 
     @property
     def missing_expected_memory_types(self) -> tuple[MemoryType, ...]:
+        if self.expected_memory_types is None:
+            return ()
         return tuple(
             memory_type
             for memory_type in self.expected_memory_types
             if self.retrieved_counts[memory_type] == 0
+        )
+
+    @property
+    def unexpected_retrieved_memory_types(self) -> tuple[MemoryType, ...]:
+        if self.expected_memory_types is None:
+            return ()
+        return tuple(
+            memory_type
+            for memory_type, count in self.retrieved_counts.items()
+            if count > 0 and memory_type not in self.expected_memory_types
         )
 
     def to_dict(self) -> dict[str, object]:
@@ -46,8 +58,15 @@ class ClarificationEvaluationResult:
             "expected_action": self.expected_action,
             "actual_action": self.actual_action,
             "correct": self.correct,
-            "expected_memory_types": list(self.expected_memory_types),
+            "expected_memory_types": (
+                list(self.expected_memory_types)
+                if self.expected_memory_types is not None
+                else None
+            ),
             "missing_expected_memory_types": list(self.missing_expected_memory_types),
+            "unexpected_retrieved_memory_types": list(
+                self.unexpected_retrieved_memory_types
+            ),
             "retrieved_counts": dict(self.retrieved_counts),
         }
 
@@ -122,9 +141,35 @@ class ClarificationEvaluationReport:
     def retrieval_coverage(self) -> float:
         """Fraction of labeled memory layers that supplied retrieved evidence."""
 
-        expected = sum(len(result.expected_memory_types) for result in self.results)
+        labeled = [
+            result for result in self.results if result.expected_memory_types is not None
+        ]
+        expected = sum(len(result.expected_memory_types or ()) for result in labeled)
         missing = sum(len(result.missing_expected_memory_types) for result in self.results)
         return self._ratio(expected - missing, expected)
+
+    @property
+    def retrieval_precision(self) -> float:
+        """Fraction of retrieved memory layers that matched labeled expectations."""
+
+        labeled = [
+            result for result in self.results if result.expected_memory_types is not None
+        ]
+        retrieved = sum(
+            count > 0
+            for result in labeled
+            for count in result.retrieved_counts.values()
+        )
+        unexpected = sum(
+            len(result.unexpected_retrieved_memory_types) for result in labeled
+        )
+        return self._ratio(retrieved - unexpected, retrieved)
+
+    @property
+    def retrieval_f1(self) -> float:
+        precision = self.retrieval_precision
+        recall = self.retrieval_coverage
+        return self._ratio(2 * precision * recall, precision + recall)
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -138,6 +183,8 @@ class ClarificationEvaluationReport:
             "clarification_recall": self.clarification_recall,
             "clarification_f1": self.clarification_f1,
             "retrieval_coverage": self.retrieval_coverage,
+            "retrieval_precision": self.retrieval_precision,
+            "retrieval_f1": self.retrieval_f1,
             "cases": [result.to_dict() for result in self.results],
         }
 

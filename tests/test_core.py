@@ -351,11 +351,11 @@ class AdapterAndMetricsTests(unittest.TestCase):
 class ClarificationEvaluationTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        store = JsonlMemoryStore(Path(self.temp.name) / "memory")
-        store.add("known", "persona", PersonaMemory("paper", "Open source", "Check code"))
-        retriever = MemoryRetriever(store, embed)
+        self.store = JsonlMemoryStore(Path(self.temp.name) / "memory")
+        self.store.add("known", "persona", PersonaMemory("paper", "Open source", "Check code"))
+        self.retriever = MemoryRetriever(self.store, embed)
         self.agent = PersonaAgent(
-            retriever,
+            self.retriever,
             lambda query: [{"memory": "persona", "query": query}],
             lambda task, memories: (
                 {"action": "final", "answer": "use preference"}
@@ -392,6 +392,8 @@ class ClarificationEvaluationTests(unittest.TestCase):
         self.assertEqual(report.clarification_recall, 1.0)
         self.assertEqual(report.clarification_f1, 1.0)
         self.assertEqual(report.retrieval_coverage, 1.0)
+        self.assertEqual(report.retrieval_precision, 1.0)
+        self.assertEqual(report.retrieval_f1, 1.0)
         self.assertEqual(report.results[0].retrieved_counts["persona"], 1)
         self.assertEqual(report.results[1].retrieved_counts["persona"], 0)
         self.assertEqual(report.results[0].missing_expected_memory_types, ())
@@ -464,6 +466,36 @@ class ClarificationEvaluationTests(unittest.TestCase):
         self.assertEqual(
             report.to_dict()["cases"][1]["missing_expected_memory_types"],
             ["workspace"],
+        )
+
+    def test_evaluator_penalizes_unexpected_memory_layers(self):
+        self.store.add("known", "workspace", WorkspaceMemory(task="paper"))
+        agent = PersonaAgent(
+            self.retriever,
+            lambda query: [
+                {"memory": "persona", "query": query},
+                {"memory": "workspace", "query": query},
+            ],
+            lambda task, memories: {"action": "final", "answer": "use evidence"},
+        )
+        report = evaluate_clarification_policy(
+            agent,
+            [
+                ClarificationEvaluationCase(
+                    "persona only",
+                    PersonaRequest("known", "paper"),
+                    "final",
+                    expected_memory_types=("persona",),
+                )
+            ],
+        )
+
+        self.assertEqual(report.retrieval_coverage, 1.0)
+        self.assertEqual(report.retrieval_precision, 0.5)
+        self.assertAlmostEqual(report.retrieval_f1, 2 / 3)
+        self.assertEqual(
+            report.results[0].unexpected_retrieved_memory_types,
+            ("workspace",),
         )
 
     def test_evaluator_rejects_an_empty_case_set(self):
