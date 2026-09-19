@@ -394,6 +394,7 @@ class ClarificationEvaluationTests(unittest.TestCase):
         self.assertEqual(report.retrieval_coverage, 1.0)
         self.assertEqual(report.retrieval_precision, 1.0)
         self.assertEqual(report.retrieval_f1, 1.0)
+        self.assertEqual(report.retrieval_exact_match, 1.0)
         self.assertEqual(report.results[0].retrieved_counts["persona"], 1)
         self.assertEqual(report.results[1].retrieved_counts["persona"], 0)
         self.assertEqual(report.results[0].missing_expected_memory_types, ())
@@ -461,6 +462,7 @@ class ClarificationEvaluationTests(unittest.TestCase):
         )
 
         self.assertEqual(report.retrieval_coverage, 2 / 3)
+        self.assertEqual(report.retrieval_exact_match, 0.5)
         self.assertEqual(report.results[1].missing_expected_memory_types, ("workspace",))
         self.assertEqual(report.to_dict()["retrieval_coverage"], 2 / 3)
         self.assertEqual(
@@ -493,6 +495,7 @@ class ClarificationEvaluationTests(unittest.TestCase):
         self.assertEqual(report.retrieval_coverage, 1.0)
         self.assertEqual(report.retrieval_precision, 0.5)
         self.assertAlmostEqual(report.retrieval_f1, 2 / 3)
+        self.assertEqual(report.retrieval_exact_match, 0.0)
         self.assertEqual(
             report.results[0].unexpected_retrieved_memory_types,
             ("workspace",),
@@ -501,6 +504,19 @@ class ClarificationEvaluationTests(unittest.TestCase):
     def test_evaluator_rejects_an_empty_case_set(self):
         with self.assertRaisesRegex(ValueError, "at least one"):
             evaluate_clarification_policy(self.agent, [])
+
+    def test_evaluator_reports_zero_exact_match_without_retrieval_labels(self):
+        report = evaluate_clarification_policy(
+            self.agent,
+            [
+                ClarificationEvaluationCase(
+                    "decision only", PersonaRequest("known", "paper"), "final"
+                )
+            ],
+        )
+
+        self.assertEqual(report.retrieval_exact_match, 0.0)
+        self.assertEqual(report.to_dict()["retrieval_exact_match"], 0.0)
 
 
 if __name__ == "__main__":

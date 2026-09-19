@@ -171,6 +171,20 @@ class ClarificationEvaluationReport:
         recall = self.retrieval_coverage
         return self._ratio(2 * precision * recall, precision + recall)
 
+    @property
+    def retrieval_exact_match(self) -> float:
+        """Fraction of labeled cases with exactly the expected memory layers."""
+
+        labeled = [
+            result for result in self.results if result.expected_memory_types is not None
+        ]
+        exact = sum(
+            not result.missing_expected_memory_types
+            and not result.unexpected_retrieved_memory_types
+            for result in labeled
+        )
+        return self._ratio(exact, len(labeled))
+
     def to_dict(self) -> dict[str, object]:
         return {
             "case_count": len(self.results),
@@ -185,6 +199,7 @@ class ClarificationEvaluationReport:
             "retrieval_coverage": self.retrieval_coverage,
             "retrieval_precision": self.retrieval_precision,
             "retrieval_f1": self.retrieval_f1,
+            "retrieval_exact_match": self.retrieval_exact_match,
             "cases": [result.to_dict() for result in self.results],
         }
 
