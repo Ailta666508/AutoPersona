@@ -113,6 +113,10 @@ class JsonlMemoryStore:
                 self._replace_unlocked(path, memories)
 
     def _path(self, user_id: str, memory_type: MemoryType) -> Path:
+        if memory_type not in MEMORY_CLASSES:
+            raise ValueError(f"Unsupported memory type: {memory_type}")
+        if not isinstance(user_id, str) or not user_id.strip():
+            raise ValueError("user_id must be a non-empty string")
         safe_user = re.sub(r"[^A-Za-z0-9_.-]+", "_", user_id)
         return self.root / memory_type / f"{safe_user}.jsonl"
 

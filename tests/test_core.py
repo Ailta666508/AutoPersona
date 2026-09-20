@@ -58,6 +58,15 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.assertEqual(self.store.list(user_id, "persona"), [])
         self.assertFalse((Path(self.temp.name) / "user name.jsonl").exists())
 
+    def test_store_rejects_invalid_identity_and_memory_type_paths(self):
+        memory = PersonaMemory("paper", "Open source", "Check code")
+        with self.assertRaisesRegex(ValueError, "user_id must be a non-empty string"):
+            self.store.add("  ", "persona", memory)
+        with self.assertRaisesRegex(ValueError, "Unsupported memory type"):
+            self.store.replace("alice", "../../outside", [])  # type: ignore[arg-type]
+
+        self.assertFalse((Path(self.temp.name) / "outside").exists())
+
     def test_corrupt_jsonl_reports_file_and_line_without_partial_results(self):
         path = self.store._path("alice", "persona")
         path.write_text(
