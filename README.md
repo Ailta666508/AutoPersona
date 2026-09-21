@@ -11,7 +11,7 @@ Qijia Zhuang · Zihan Shen · Rui Liu · Yuxiang Ren
 [![Paper](https://img.shields.io/badge/Paper-PDF-B31B1B?logo=adobeacrobatreader&logoColor=white)](https://cdn.jsdelivr.net/gh/Ailta666508/AutoPersona@main/paper/AutoPersona_Preprint.pdf)
 [![CI](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml/badge.svg)](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-28%20passing-2ea44f)
+![Tests](https://img.shields.io/badge/tests-29%20passing-2ea44f)
 
 [Overview](#overview) · [Motivation](#motivation) · [Method](#method) · [Analysis](#clarification-analysis) · [Code Scope](#code-scope) · [Quick Start](#quick-start)
 
@@ -200,7 +200,7 @@ The release checks verify:
 
 - all 12 maintained core source files against a SHA-256 manifest;
 - Python syntax and editable installation;
-- 28 deterministic unit tests covering crash-durable and concurrent storage, validated storage and retrieval inputs, updates, clarification, resumable DAG execution, adapters, metrics, and evaluation;
+- 29 deterministic unit tests covering crash-durable and concurrent storage, collision-resistant user paths, validated storage and retrieval inputs, updates, clarification, resumable DAG execution, adapters, metrics, and evaluation;
 - the API-free minimal example;
 - integrity verification for the allowlisted preprint and its three extracted figures, plus exclusion of local credentials, other document artifacts, checkpoints, results, and an unrelated vendored `verl` source tree.
 

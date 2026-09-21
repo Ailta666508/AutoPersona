@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -118,6 +119,15 @@ class JsonlMemoryStore:
         if not isinstance(user_id, str) or not user_id.strip():
             raise ValueError("user_id must be a non-empty string")
         safe_user = re.sub(r"[^A-Za-z0-9_.-]+", "_", user_id)
+        is_portable = (
+            safe_user == user_id
+            and len(safe_user) <= 64
+            and safe_user not in {".", ".."}
+        )
+        if not is_portable:
+            prefix = safe_user.strip("._")[:48] or "user"
+            digest = hashlib.sha256(user_id.encode("utf-8")).hexdigest()[:16]
+            safe_user = f"{prefix}-{digest}"
         return self.root / memory_type / f"{safe_user}.jsonl"
 
     @staticmethod

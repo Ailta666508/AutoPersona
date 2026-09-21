@@ -67,6 +67,23 @@ class StoreAndMemoryTests(unittest.TestCase):
 
         self.assertFalse((Path(self.temp.name) / "outside").exists())
 
+    def test_unsafe_user_ids_have_distinct_bounded_file_names(self):
+        slash_id = "team/alice"
+        space_id = "team alice"
+        long_id = "user-" + "x" * 300
+        for user_id in (slash_id, space_id, long_id):
+            self.store.add(
+                user_id,
+                "persona",
+                PersonaMemory("paper", user_id, "keep separate"),
+            )
+
+        paths = [self.store._path(user_id, "persona") for user_id in (slash_id, space_id, long_id)]
+        self.assertEqual(len(set(paths)), 3)
+        self.assertTrue(all(len(path.name.encode("utf-8")) < 255 for path in paths))
+        self.assertEqual(self.store.list(slash_id, "persona")[0].preference, slash_id)
+        self.assertEqual(self.store.list(space_id, "persona")[0].preference, space_id)
+
     def test_corrupt_jsonl_reports_file_and_line_without_partial_results(self):
         path = self.store._path("alice", "persona")
         path.write_text(
