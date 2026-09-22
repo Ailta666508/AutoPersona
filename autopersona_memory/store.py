@@ -33,6 +33,10 @@ class MemoryStoreCorruptionError(MemoryStoreError):
     """Raised when a JSONL memory file contains a malformed record."""
 
 
+class MemoryStoreMigrationError(MemoryStoreError):
+    """Raised when an explicit migration would overwrite existing data."""
+
+
 class JsonlMemoryStore:
     def __init__(self, root: str | Path):
         self.root = Path(root)
@@ -113,6 +117,37 @@ class JsonlMemoryStore:
                 del memories[index]
                 self._replace_unlocked(path, memories)
 
+    def migrate_legacy_user_file(self, user_id: str, memory_type: MemoryType) -> bool:
+        """Move one file written by the pre-hash filename scheme.
+
+        Migration is deliberately explicit: two historical user IDs can map to
+        the same sanitized filename, so silently selecting a legacy file during
+        normal reads could leak one user's memories into another user's scope.
+        Returns ``False`` when the old filename does not exist.
+        """
+        with self._lock:
+            destination = self._path(user_id, memory_type)
+            legacy = self._legacy_path(user_id, memory_type)
+            if legacy == destination or not legacy.exists():
+                return False
+            if destination.exists():
+                raise MemoryStoreMigrationError(
+                    f"Refusing to overwrite canonical memory file: {destination}"
+                )
+            with self._file_lock(destination), self._file_lock(legacy):
+                if destination.exists():
+                    raise MemoryStoreMigrationError(
+                        f"Refusing to overwrite canonical memory file: {destination}"
+                    )
+                try:
+                    os.replace(legacy, destination)
+                    self._fsync_directory(destination.parent)
+                except OSError as error:
+                    raise MemoryStoreError(
+                        f"Unable to migrate legacy memory file: {legacy}"
+                    ) from error
+            return True
+
     def _path(self, user_id: str, memory_type: MemoryType) -> Path:
         if memory_type not in MEMORY_CLASSES:
             raise ValueError(f"Unsupported memory type: {memory_type}")
@@ -128,6 +163,15 @@ class JsonlMemoryStore:
             prefix = safe_user.strip("._")[:48] or "user"
             digest = hashlib.sha256(user_id.encode("utf-8")).hexdigest()[:16]
             safe_user = f"{prefix}-{digest}"
+        return self.root / memory_type / f"{safe_user}.jsonl"
+
+    def _legacy_path(self, user_id: str, memory_type: MemoryType) -> Path:
+        """Return the old sanitized path without using it for normal reads."""
+        if memory_type not in MEMORY_CLASSES:
+            raise ValueError(f"Unsupported memory type: {memory_type}")
+        if not isinstance(user_id, str) or not user_id.strip():
+            raise ValueError("user_id must be a non-empty string")
+        safe_user = re.sub(r"[^A-Za-z0-9_.-]+", "_", user_id)
         return self.root / memory_type / f"{safe_user}.jsonl"
 
     @staticmethod

@@ -4,8 +4,8 @@
     {
       "source_path": "__init__.py",
       "release_path": "autopersona_memory/__init__.py",
-      "sha256": "14ed51348ebba9448042ab712514279d2f17386abda2cccb2615b671e43d5b48",
-      "bytes": 1585
+      "sha256": "0294e744ef576cea56521c2b01e95eb0ec4b4524d44b96c009b6bf3e87144e38",
+      "bytes": 1666
     },
     {
       "source_path": "adapters/__init__.py",
@@ -70,8 +70,8 @@
     {
       "source_path": "store.py",
       "release_path": "autopersona_memory/store.py",
-      "sha256": "0b4aedbac5339180cff81229805f4be17ae8bde815aeb678e46548a06186e6b7",
-      "bytes": 7599
+      "sha256": "c73a50f1ee054b172be7e258b4387d00b0af516e92672cbaa5ffb1273cb6a202",
+      "bytes": 9770
     }
   ]
 }

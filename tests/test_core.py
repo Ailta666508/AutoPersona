@@ -13,6 +13,7 @@ from autopersona_memory import (
     MemoryRetriever,
     MemoryStoreCorruptionError,
     MemoryStoreError,
+    MemoryStoreMigrationError,
     MemoryUpdater,
     MvpMetrics,
     PersonaAgent,
@@ -83,6 +84,30 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.assertTrue(all(len(path.name.encode("utf-8")) < 255 for path in paths))
         self.assertEqual(self.store.list(slash_id, "persona")[0].preference, slash_id)
         self.assertEqual(self.store.list(space_id, "persona")[0].preference, space_id)
+
+    def test_legacy_filename_migration_is_explicit_and_preserves_records(self):
+        user_id = "team/alice"
+        legacy = self.store._legacy_path(user_id, "persona")
+        memory = PersonaMemory("paper", "Open source", "keep history")
+        legacy.write_text(json.dumps(memory.to_dict()) + "\n", encoding="utf-8")
+
+        self.assertTrue(self.store.migrate_legacy_user_file(user_id, "persona"))
+        self.assertFalse(legacy.exists())
+        self.assertEqual(self.store.list(user_id, "persona"), [memory])
+        self.assertFalse(self.store.migrate_legacy_user_file(user_id, "persona"))
+
+    def test_legacy_filename_migration_refuses_to_overwrite_canonical_data(self):
+        user_id = "team/alice"
+        legacy = self.store._legacy_path(user_id, "persona")
+        legacy.write_text(
+            json.dumps(PersonaMemory("paper", "legacy", "old").to_dict()) + "\n",
+            encoding="utf-8",
+        )
+        self.store.add(user_id, "persona", PersonaMemory("paper", "new", "current"))
+
+        with self.assertRaises(MemoryStoreMigrationError):
+            self.store.migrate_legacy_user_file(user_id, "persona")
+        self.assertTrue(legacy.exists())
 
     def test_corrupt_jsonl_reports_file_and_line_without_partial_results(self):
         path = self.store._path("alice", "persona")
