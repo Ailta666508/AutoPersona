@@ -50,25 +50,7 @@ class JsonlMemoryStore:
     def list(self, user_id: str, memory_type: MemoryType) -> list[Memory]:
         with self._lock:
             path = self._path(user_id, memory_type)
-            if not path.exists():
-                return []
-            memory_class = MEMORY_CLASSES[memory_type]
-            try:
-                lines = path.read_text(encoding="utf-8").splitlines()
-            except OSError as error:
-                raise MemoryStoreError(f"Unable to read memory file: {path}") from error
-
-            memories = []
-            for line_number, line in enumerate(lines, start=1):
-                if not line.strip():
-                    continue
-                try:
-                    memories.append(memory_class.from_dict(json.loads(line)))
-                except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
-                    raise MemoryStoreCorruptionError(
-                        f"Invalid {memory_type} memory record at {path}:{line_number}"
-                    ) from error
-            return memories
+            return self._read_path(path, memory_type)
 
     def add(self, user_id: str, memory_type: MemoryType, memory: Memory) -> None:
         with self._lock:
@@ -139,6 +121,7 @@ class JsonlMemoryStore:
                     raise MemoryStoreMigrationError(
                         f"Refusing to overwrite canonical memory file: {destination}"
                     )
+                self._read_path(legacy, memory_type)
                 try:
                     os.replace(legacy, destination)
                     self._fsync_directory(destination.parent)
@@ -147,6 +130,28 @@ class JsonlMemoryStore:
                         f"Unable to migrate legacy memory file: {legacy}"
                     ) from error
             return True
+
+    @staticmethod
+    def _read_path(path: Path, memory_type: MemoryType) -> list[Memory]:
+        if not path.exists():
+            return []
+        memory_class = MEMORY_CLASSES[memory_type]
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError as error:
+            raise MemoryStoreError(f"Unable to read memory file: {path}") from error
+
+        memories = []
+        for line_number, line in enumerate(lines, start=1):
+            if not line.strip():
+                continue
+            try:
+                memories.append(memory_class.from_dict(json.loads(line)))
+            except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
+                raise MemoryStoreCorruptionError(
+                    f"Invalid {memory_type} memory record at {path}:{line_number}"
+                ) from error
+        return memories
 
     def _path(self, user_id: str, memory_type: MemoryType) -> Path:
         if memory_type not in MEMORY_CLASSES:

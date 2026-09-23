@@ -109,6 +109,16 @@ class StoreAndMemoryTests(unittest.TestCase):
             self.store.migrate_legacy_user_file(user_id, "persona")
         self.assertTrue(legacy.exists())
 
+    def test_legacy_filename_migration_rejects_corrupt_records_before_move(self):
+        user_id = "team/alice"
+        legacy = self.store._legacy_path(user_id, "persona")
+        legacy.write_text('{"topic": "paper"\n', encoding="utf-8")
+
+        with self.assertRaisesRegex(MemoryStoreCorruptionError, rf"{legacy}:1"):
+            self.store.migrate_legacy_user_file(user_id, "persona")
+        self.assertTrue(legacy.exists())
+        self.assertFalse(self.store._path(user_id, "persona").exists())
+
     def test_corrupt_jsonl_reports_file_and_line_without_partial_results(self):
         path = self.store._path("alice", "persona")
         path.write_text(
