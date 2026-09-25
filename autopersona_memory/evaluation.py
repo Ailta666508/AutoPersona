@@ -8,6 +8,8 @@ from .persona_agent import PersonaAgent
 
 
 AgentAction = Literal["clarify", "final"]
+_AGENT_ACTIONS = ("clarify", "final")
+_MEMORY_TYPES = ("trajectory", "workspace", "persona")
 
 
 @dataclass(frozen=True)
@@ -204,6 +206,29 @@ class ClarificationEvaluationReport:
         }
 
 
+def _validate_case(case: ClarificationEvaluationCase) -> None:
+    if not isinstance(case.name, str) or not case.name.strip():
+        raise ValueError("clarification evaluation case name must be non-empty")
+    if case.expected_action not in _AGENT_ACTIONS:
+        raise ValueError(
+            f"unsupported expected action for case {case.name!r}: {case.expected_action!r}"
+        )
+    if case.expected_memory_types is None:
+        return
+
+    seen: list[object] = []
+    for memory_type in case.expected_memory_types:
+        if memory_type not in _MEMORY_TYPES:
+            raise ValueError(
+                f"unsupported expected memory type for case {case.name!r}: {memory_type!r}"
+            )
+        if memory_type in seen:
+            raise ValueError(
+                f"duplicate expected memory type for case {case.name!r}: {memory_type!r}"
+            )
+        seen.append(memory_type)
+
+
 def evaluate_clarification_policy(
     agent: PersonaAgent,
     cases: Sequence[ClarificationEvaluationCase],
@@ -212,6 +237,8 @@ def evaluate_clarification_policy(
 
     if not cases:
         raise ValueError("at least one clarification evaluation case is required")
+    for case in cases:
+        _validate_case(case)
 
     results = []
     for case in cases:

@@ -566,6 +566,43 @@ class ClarificationEvaluationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "at least one"):
             evaluate_clarification_policy(self.agent, [])
 
+    def test_evaluator_rejects_an_unknown_expected_action(self):
+        case = ClarificationEvaluationCase(
+            "invalid label",
+            PersonaRequest("known", "paper"),
+            "maybe",  # type: ignore[arg-type]
+        )
+
+        with self.assertRaisesRegex(ValueError, "unsupported expected action"):
+            evaluate_clarification_policy(self.agent, [case])
+
+    def test_evaluator_rejects_unknown_or_duplicate_memory_labels(self):
+        request = PersonaRequest("known", "paper")
+        with self.assertRaisesRegex(ValueError, "unsupported expected memory type"):
+            evaluate_clarification_policy(
+                self.agent,
+                [
+                    ClarificationEvaluationCase(
+                        "unknown layer",
+                        request,
+                        "final",
+                        expected_memory_types=("profile",),  # type: ignore[arg-type]
+                    )
+                ],
+            )
+        with self.assertRaisesRegex(ValueError, "duplicate expected memory type"):
+            evaluate_clarification_policy(
+                self.agent,
+                [
+                    ClarificationEvaluationCase(
+                        "duplicate layer",
+                        request,
+                        "final",
+                        expected_memory_types=("persona", "persona"),
+                    )
+                ],
+            )
+
     def test_evaluator_reports_zero_exact_match_without_retrieval_labels(self):
         report = evaluate_clarification_policy(
             self.agent,

@@ -22,8 +22,8 @@
     {
       "source_path": "evaluation.py",
       "release_path": "autopersona_memory/evaluation.py",
-      "sha256": "64c5827198793e29ab5c0d466ed22f3be09c8c0b302d5fbdcae963ad8427d8e5",
-      "bytes": 8135
+      "sha256": "8a53737ea763732a3a64fdd5b5f71912b01dc8cf24025d6c142f8bd082385789",
+      "bytes": 9187
     },
     {
       "source_path": "execution.py",
