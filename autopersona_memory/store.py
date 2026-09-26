@@ -88,6 +88,7 @@ class JsonlMemoryStore:
             path = self._path(user_id, memory_type)
             with self._file_lock(path):
                 memories = self.list(user_id, memory_type)
+                self._validate_index(index, len(memories), memory_type)
                 memories[index] = memory
                 self._replace_unlocked(path, memories)
 
@@ -96,8 +97,16 @@ class JsonlMemoryStore:
             path = self._path(user_id, memory_type)
             with self._file_lock(path):
                 memories = self.list(user_id, memory_type)
+                self._validate_index(index, len(memories), memory_type)
                 del memories[index]
                 self._replace_unlocked(path, memories)
+
+    @staticmethod
+    def _validate_index(index: int, length: int, memory_type: MemoryType) -> None:
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise TypeError("memory index must be an integer")
+        if index < 0 or index >= length:
+            raise IndexError(f"{memory_type} memory index out of range: {index}")
 
     def migrate_legacy_user_file(self, user_id: str, memory_type: MemoryType) -> bool:
         """Move one file written by the pre-hash filename scheme.

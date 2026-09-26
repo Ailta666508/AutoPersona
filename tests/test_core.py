@@ -59,6 +59,29 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.assertEqual(self.store.list(user_id, "persona"), [])
         self.assertFalse((Path(self.temp.name) / "user name.jsonl").exists())
 
+    def test_store_rejects_negative_update_indices_without_mutation(self):
+        original = PersonaMemory("paper", "Open source", "Check code")
+        self.store.add("alice", "persona", original)
+
+        with self.assertRaisesRegex(IndexError, "persona memory index out of range: -1"):
+            self.store.update(
+                "alice",
+                "persona",
+                -1,
+                PersonaMemory("paper", "Recent", "Check date"),
+            )
+
+        self.assertEqual(self.store.list("alice", "persona"), [original])
+
+    def test_store_rejects_out_of_range_delete_indices_without_mutation(self):
+        original = PersonaMemory("paper", "Open source", "Check code")
+        self.store.add("alice", "persona", original)
+
+        with self.assertRaisesRegex(IndexError, "persona memory index out of range: 1"):
+            self.store.delete("alice", "persona", 1)
+
+        self.assertEqual(self.store.list("alice", "persona"), [original])
+
     def test_store_rejects_invalid_identity_and_memory_type_paths(self):
         memory = PersonaMemory("paper", "Open source", "Check code")
         with self.assertRaisesRegex(ValueError, "user_id must be a non-empty string"):
