@@ -72,16 +72,32 @@ class MemoryUpdater:
             selected = self._build(memory_type, decision.memory or memory.to_dict())
             self.store.add(user_id, memory_type, selected)
         elif decision.operation == "update":
-            if decision.index is None:
-                raise ValueError("update requires an index")
-            source_index = candidates[decision.index][0]
+            candidate_index = self._candidate_index(
+                decision.index,
+                len(candidates),
+                "update",
+            )
+            source_index = candidates[candidate_index][0]
             selected = self._build(memory_type, decision.memory or memory.to_dict())
             self.store.update(user_id, memory_type, source_index, selected)
         elif decision.operation == "delete":
-            if decision.index is None:
-                raise ValueError("delete requires an index")
-            self.store.delete(user_id, memory_type, candidates[decision.index][0])
+            candidate_index = self._candidate_index(
+                decision.index,
+                len(candidates),
+                "delete",
+            )
+            self.store.delete(user_id, memory_type, candidates[candidate_index][0])
         return decision
+
+    @staticmethod
+    def _candidate_index(index: int | None, length: int, operation: str) -> int:
+        if isinstance(index, bool) or not isinstance(index, int):
+            raise ValueError(f"{operation} requires an integer candidate index")
+        if index < 0 or index >= length:
+            raise ValueError(
+                f"{operation} candidate index out of range: {index}"
+            )
+        return index
 
     def _nearest(
         self,

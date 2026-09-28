@@ -237,6 +237,55 @@ class StoreAndMemoryTests(unittest.TestCase):
         self.assertEqual(memories[0].preference, "tabs")
         self.assertEqual(memories[1].preference, "open source")
 
+    def test_updater_rejects_negative_candidate_index_without_mutation(self):
+        original = PersonaMemory("paper", "old", "old strategy")
+        self.store.add("alice", "persona", original)
+        updater = MemoryUpdater(
+            self.store,
+            embed,
+            lambda memory_type, new, candidates: {
+                "operation": "update",
+                "index": -1,
+                "memory": new,
+            },
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "update candidate index out of range: -1",
+        ):
+            updater.update(
+                "alice",
+                "persona",
+                PersonaMemory("paper", "new", "new strategy"),
+            )
+
+        self.assertEqual(self.store.list("alice", "persona"), [original])
+
+    def test_updater_rejects_out_of_range_delete_without_mutation(self):
+        original = PersonaMemory("paper", "old", "old strategy")
+        self.store.add("alice", "persona", original)
+        updater = MemoryUpdater(
+            self.store,
+            embed,
+            lambda memory_type, new, candidates: {
+                "operation": "delete",
+                "index": 1,
+            },
+        )
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "delete candidate index out of range: 1",
+        ):
+            updater.update(
+                "alice",
+                "persona",
+                PersonaMemory("paper", "new", "new strategy"),
+            )
+
+        self.assertEqual(self.store.list("alice", "persona"), [original])
+
     def test_retrieval_is_separated_by_memory_type(self):
         self.store.add("alice", "trajectory", TrajectoryMemory(query="Python task"))
         self.store.add("alice", "workspace", WorkspaceMemory(task="dark theme"))

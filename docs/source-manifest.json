@@ -34,8 +34,8 @@
     {
       "source_path": "extraction.py",
       "release_path": "autopersona_memory/extraction.py",
-      "sha256": "3125191b90b28df32fc08b1b9d7c772a82d48ddab707fbf1e78f744390c579ba",
-      "bytes": 4486
+      "sha256": "a327e7c68594edf9a3638c6ce147e08586b97fc92f4b601096474f98a82665e0",
+      "bytes": 5026
     },
     {
       "source_path": "metrics.py",
