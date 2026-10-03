@@ -47,6 +47,31 @@ class StoreAndMemoryTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
+    def test_non_object_records_report_corruption_and_block_append(self):
+        memory = PersonaMemory("topic", "preference", "strategy")
+        for memory_type in ("persona", "trajectory", "workspace"):
+            for record in ("null", "[]", '"text"', "42", "true"):
+                with self.subTest(memory_type=memory_type, record=record):
+                    path = self.store._path("alice", memory_type)
+                    content = "\n" + record + "\n"
+                    path.write_text(content, encoding="utf-8")
+                    with self.assertRaisesRegex(MemoryStoreCorruptionError, ":2"):
+                        self.store.list("alice", memory_type)
+                    with self.assertRaises(MemoryStoreCorruptionError):
+                        self.store.add("alice", memory_type, memory)
+                    self.assertEqual(path.read_text(encoding="utf-8"), content)
+
+    def test_invalid_utf8_reports_corruption_without_mutating_file(self):
+        path = self.store._path("alice", "persona")
+        original = b"\xff\xfe\n"
+        path.write_bytes(original)
+        with self.assertRaisesRegex(MemoryStoreCorruptionError, "Invalid UTF-8") as raised:
+            self.store.list("alice", "persona")
+        self.assertIsInstance(raised.exception.__cause__, UnicodeDecodeError)
+        with self.assertRaises(MemoryStoreCorruptionError):
+            self.store.add("alice", "persona", PersonaMemory("t", "p", "s"))
+        self.assertEqual(path.read_bytes(), original)
+
     def test_jsonl_store_crud_and_user_path_sanitization(self):
         first = PersonaMemory("paper", "Open source", "Check code")
         second = PersonaMemory("paper", "Recent", "Check date")

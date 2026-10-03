@@ -147,6 +147,10 @@ class JsonlMemoryStore:
         memory_class = MEMORY_CLASSES[memory_type]
         try:
             lines = path.read_text(encoding="utf-8").splitlines()
+        except UnicodeDecodeError as error:
+            raise MemoryStoreCorruptionError(
+                f"Invalid UTF-8 memory file: {path}"
+            ) from error
         except OSError as error:
             raise MemoryStoreError(f"Unable to read memory file: {path}") from error
 
@@ -155,7 +159,10 @@ class JsonlMemoryStore:
             if not line.strip():
                 continue
             try:
-                memories.append(memory_class.from_dict(json.loads(line)))
+                record = json.loads(line)
+                if not isinstance(record, dict):
+                    raise ValueError("memory record must be a JSON object")
+                memories.append(memory_class.from_dict(record))
             except (json.JSONDecodeError, KeyError, TypeError, ValueError) as error:
                 raise MemoryStoreCorruptionError(
                     f"Invalid {memory_type} memory record at {path}:{line_number}"
