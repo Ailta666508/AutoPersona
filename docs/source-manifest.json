@@ -64,8 +64,8 @@
     {
       "source_path": "retrieval.py",
       "release_path": "autopersona_memory/retrieval.py",
-      "sha256": "d9be832be8eca2b76bac1d44ee094f546d60dc4e0b7a499634dcef00f51946c6",
-      "bytes": 2317
+      "sha256": "83373831211d6c3108f109bc0f66bd007ddafa5f21d77ecd93fbcbbb73d89fb7",
+      "bytes": 3064
     },
     {
       "source_path": "store.py",

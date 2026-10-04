@@ -11,7 +11,7 @@ Qijia Zhuang · Zihan Shen · Rui Liu · Yuxiang Ren
 [![Paper](https://img.shields.io/badge/Paper-PDF-B31B1B?logo=adobeacrobatreader&logoColor=white)](https://cdn.jsdelivr.net/gh/Ailta666508/AutoPersona@main/paper/AutoPersona_Preprint.pdf)
 [![CI](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml/badge.svg)](https://github.com/Ailta666508/AutoPersona/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-38%20passing-2ea44f)
+![Tests](https://img.shields.io/badge/tests-43%20passing-2ea44f)
 
 [Overview](#overview) · [Motivation](#motivation) · [Method](#method) · [Analysis](#clarification-analysis) · [Code Scope](#code-scope) · [Quick Start](#quick-start)
 
@@ -200,7 +200,7 @@ The release checks verify:
 
 - all 12 maintained core source files against a SHA-256 manifest;
 - Python syntax and editable installation;
-- 38 deterministic unit tests covering crash-durable and concurrent storage, collision-resistant user paths, validated storage and resolver indices, retrieval and evaluation labels, updates, clarification, resumable DAG execution, adapters, and metrics;
+- 43 deterministic unit tests covering crash-durable and concurrent storage, collision-resistant user paths, validated storage and resolver indices, retrieval and evaluation labels, updates, clarification, resumable DAG execution, adapters, and metrics;
 - the API-free minimal example;
 - integrity verification for the allowlisted preprint and its three extracted figures, plus exclusion of local credentials, other document artifacts, checkpoints, results, and an unrelated vendored `verl` source tree.
 
@@ -232,3 +232,16 @@ If you use the ideas or released runtime in academic work, please cite the curre
 No open-source license has been assigned to this release. Copyright and reuse permissions remain reserved until the relevant rights holders approve a license.
 
 **Note:** This project was initially developed locally. The Git repository was created when the codebase was prepared for publication, so the early development history is unavailable. Subsequent updates are tracked in this repository.
+
+### Retrieval relevance and repeated searches
+
+`MemoryRetriever.retrieve(user_id, searches, top_k=3, min_similarity=0.8)`
+returns only positive cosine matches at or above the selected threshold. The
+default `0.0` preserves existing behavior. A threshold of `1.0` selects only
+unit-similarity matches. Tune this value for your embedder using public or
+synthetic evaluation cases; it is not calibrated confidence. `top_k` applies
+per search, and results are deduplicated per memory type.
+
+Repeated queries and memory texts reuse embeddings within one call, and each
+requested memory bank is read once. The cache is discarded afterward, so new
+writes and another user's memory bank remain visible on the next call.

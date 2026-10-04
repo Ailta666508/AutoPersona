@@ -21,24 +21,39 @@ class MemoryRetriever:
         user_id: str,
         searches: list[SearchRequest],
         top_k: int = 3,
+        *,
+        min_similarity: float = 0.0,
     ) -> MemoryBundle:
-        if top_k < 1:
+        if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 1:
             raise ValueError("top_k must be a positive integer")
+        if not math.isfinite(min_similarity) or not 0 <= min_similarity <= 1:
+            raise ValueError("min_similarity must be finite and between 0 and 1")
+        # Cache only within this call: later writes and other users remain visible.
+        vectors: dict[str, tuple[float, ...]] = {}
+        banks: dict[MemoryType, list[Memory]] = {}
+
+        def embed(text: str) -> tuple[float, ...]:
+            if text not in vectors:
+                vectors[text] = tuple(self.embedder(text))
+            return vectors[text]
+
         selected: dict[MemoryType, list[Memory]] = {
             "trajectory": [],
             "workspace": [],
             "persona": [],
         }
         for search in searches:
-            candidates = self.store.list(user_id, search.memory)
-            query_vector = self.embedder(search.query)
+            if search.memory not in banks:
+                banks[search.memory] = self.store.list(user_id, search.memory)
+            candidates = banks[search.memory]
+            query_vector = embed(search.query)
             scored = [
-                (_cosine(query_vector, self.embedder(_text(item))), item)
+                (_cosine(query_vector, embed(_text(item))), item)
                 for item in candidates
             ]
             scored.sort(key=lambda row: row[0], reverse=True)
             for score, item in scored[:top_k]:
-                if score > 0 and item not in selected[search.memory]:
+                if score > 0 and score >= min_similarity and item not in selected[search.memory]:
                     selected[search.memory].append(item)
         return MemoryBundle(
             trajectory=list(selected["trajectory"]),
