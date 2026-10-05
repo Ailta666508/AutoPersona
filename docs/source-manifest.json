@@ -52,8 +52,8 @@
     {
       "source_path": "persona_agent.py",
       "release_path": "autopersona_memory/persona_agent.py",
-      "sha256": "3a20c98e3f5d276605d27e806f2bdef8bf591a750c808f5fb06e6afcba62bbee",
-      "bytes": 1791
+      "sha256": "6be0f1329762e72c1f0b36bba266f6fa757df70a0bf00e17181d5c247887d002",
+      "bytes": 2519
     },
     {
       "source_path": "refinement.py",

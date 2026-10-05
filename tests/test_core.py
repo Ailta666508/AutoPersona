@@ -368,6 +368,20 @@ class AgentAndExecutionTests(unittest.TestCase):
         self.assertEqual(decision.answer, "Open source")
         self.assertEqual(len(decision.memories.persona), 1)
 
+    def test_agent_forwards_retrieval_controls(self):
+        from unittest.mock import Mock
+        from autopersona_memory.models import MemoryBundle
+        retriever = Mock()
+        retriever.retrieve.return_value = MemoryBundle()
+        agent = PersonaAgent(retriever, self.search, lambda task, memories: {"action": "final"}, top_k=1, min_similarity=0.8)
+        agent.decide(PersonaRequest("alice", "Recommend a paper"))
+        retriever.retrieve.assert_called_once_with("alice", [SearchRequest("persona", "paper")], top_k=1, min_similarity=0.8)
+
+    def test_agent_rejects_invalid_retrieval_configuration(self):
+        for options in ({"top_k": True}, {"top_k": 0}, {"min_similarity": float("nan")}, {"min_similarity": 1.1}, {"min_similarity": True}):
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                PersonaAgent(self.retriever, self.search, lambda task, memories: {}, **options)
+
     def test_persona_agent_requires_nonempty_clarification(self):
         agent = PersonaAgent(
             self.retriever,
