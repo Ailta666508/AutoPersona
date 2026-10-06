@@ -245,3 +245,7 @@ per search, and results are deduplicated per memory type.
 Repeated queries and memory texts reuse embeddings within one call, and each
 requested memory bank is read once. The cache is discarded afterward, so new
 writes and another user's memory bank remain visible on the next call.
+
+### Atomic batch append
+
+`store.add_many(user_id, "persona", records)` appends an iterable with one atomic replacement per user/bank. Iterator, serialization or replacement failures before publication leave the existing file intact. Empty batches do not write; mismatched bank types are rejected. Unix file locks coordinate separate store instances; Windows coordination remains limited to a single store instance.

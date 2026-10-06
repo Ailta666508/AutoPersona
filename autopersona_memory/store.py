@@ -53,18 +53,24 @@ class JsonlMemoryStore:
             return self._read_path(path, memory_type)
 
     def add(self, user_id: str, memory_type: MemoryType, memory: Memory) -> None:
-        with self._lock:
-            path = self._path(user_id, memory_type)
-            with self._file_lock(path):
-                if path.exists():
-                    self.list(user_id, memory_type)
-                try:
-                    existing = path.read_text(encoding="utf-8") if path.exists() else ""
-                except OSError as error:
-                    raise MemoryStoreError(f"Unable to read memory file: {path}") from error
-                row = json.dumps(memory.to_dict(), ensure_ascii=False, sort_keys=True)
-                separator = "" if not existing or existing.endswith("\n") else "\n"
-                self._atomic_write(path, f"{existing}{separator}{row}\n")
+        self.add_many(user_id, memory_type, [memory])
+
+    def add_many(
+        self, user_id: str, memory_type: MemoryType, memories: Iterable[Memory],
+    ) -> None:
+        """Append a batch with one atomic replacement; failed iteration writes nothing.
+
+        Atomicity is per user and memory bank, not across multiple banks.
+        """
+        path = self._path(user_id, memory_type)
+        batch = list(memories)
+        if not batch:
+            return
+        with self._lock, self._file_lock(path):
+            existing = self._read_path(path, memory_type)
+            if any(not isinstance(item, MEMORY_CLASSES[memory_type]) for item in batch):
+                raise TypeError(f"All batch records must be {memory_type} memories")
+            self._replace_unlocked(path, [*existing, *batch])
 
     def replace(
         self,
