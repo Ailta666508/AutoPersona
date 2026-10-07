@@ -249,3 +249,10 @@ writes and another user's memory bank remain visible on the next call.
 ### Atomic batch append
 
 `store.add_many(user_id, "persona", records)` appends an iterable with one atomic replacement per user/bank. Iterator, serialization or replacement failures before publication leave the existing file intact. Empty batches do not write; mismatched bank types are rejected. Unix file locks coordinate separate store instances; Windows coordination remains limited to a single store instance.
+
+### Runnable clarification evaluation
+
+Run `python examples/evaluate_retrieval_clarification.py` for a data-free,
+API-key-free example that evaluates both a relevant-memory final response and a
+low-relevance clarification. The printed JSON includes decision and retrieval
+metrics and is labeled with synthetic case names.
