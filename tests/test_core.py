@@ -377,6 +377,16 @@ class AgentAndExecutionTests(unittest.TestCase):
         agent.decide(PersonaRequest("alice", "Recommend a paper"))
         retriever.retrieve.assert_called_once_with("alice", [SearchRequest("persona", "paper")], top_k=1, min_similarity=0.8)
 
+    def test_request_can_override_retrieval_controls_for_one_decision(self):
+        from unittest.mock import Mock
+        from autopersona_memory.models import MemoryBundle
+        retriever = Mock()
+        retriever.retrieve.return_value = MemoryBundle()
+        agent = PersonaAgent(self.retriever, self.search, lambda task, memories: {"action": "final"}, top_k=3, min_similarity=0.0)
+        agent.retriever = retriever
+        agent.decide(PersonaRequest("alice", "Recommend a paper", retrieval_top_k=1, retrieval_min_similarity=0.9))
+        retriever.retrieve.assert_called_once_with("alice", [SearchRequest("persona", "paper")], top_k=1, min_similarity=0.9)
+
     def test_agent_rejects_invalid_retrieval_configuration(self):
         for options in ({"top_k": True}, {"top_k": 0}, {"min_similarity": float("nan")}, {"min_similarity": 1.1}, {"min_similarity": True}):
             with self.subTest(options=options), self.assertRaises(ValueError):

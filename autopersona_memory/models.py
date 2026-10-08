@@ -110,6 +110,8 @@ class PersonaRequest:
     query: str
     dag: dict[str, Any] = field(default_factory=dict)
     additional_tools: list[str] = field(default_factory=list)
+    retrieval_top_k: int | None = None
+    retrieval_min_similarity: float | None = None
 
 
 @dataclass(frozen=True)

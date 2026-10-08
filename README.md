@@ -256,3 +256,8 @@ Run `python examples/evaluate_retrieval_clarification.py` for a data-free,
 API-key-free example that evaluates both a relevant-memory final response and a
 low-relevance clarification. The printed JSON includes decision and retrieval
 metrics and is labeled with synthetic case names.
+
+Applications can also override `retrieval_top_k` and
+`retrieval_min_similarity` on an individual `PersonaRequest`, allowing a
+high-risk decision to demand stronger evidence without changing the agent's
+default policy.

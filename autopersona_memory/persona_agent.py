@@ -50,11 +50,17 @@ class PersonaAgent:
 
     def decide(self, request: PersonaRequest) -> PersonaDecision:
         searches = [SearchRequest(**item) for item in self.search_model(request.query)]
+        top_k = self.top_k if request.retrieval_top_k is None else request.retrieval_top_k
+        min_similarity = (
+            self.min_similarity
+            if request.retrieval_min_similarity is None
+            else request.retrieval_min_similarity
+        )
         memories = self.retriever.retrieve(
             request.user_id,
             searches,
-            top_k=self.top_k,
-            min_similarity=self.min_similarity,
+            top_k=top_k,
+            min_similarity=min_similarity,
         )
         output = self.decision_model(
             {"query": request.query, "dag": request.dag},
