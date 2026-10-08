@@ -47,30 +47,47 @@ class StoreAndMemoryTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def test_non_object_records_report_corruption_and_block_append(self):
-        memory = PersonaMemory("topic", "preference", "strategy")
-        for memory_type in ("persona", "trajectory", "workspace"):
+    def test_non_object_records_report_corruption_and_block_mutations(self):
+        memories = {
+            "persona": PersonaMemory("paper", "Open source", "Check code"),
+            "trajectory": TrajectoryMemory(query="Find a paper"),
+            "workspace": WorkspaceMemory(task="Find a paper"),
+        }
+        for memory_type, memory in memories.items():
             for record in ("null", "[]", '"text"', "42", "true"):
                 with self.subTest(memory_type=memory_type, record=record):
                     path = self.store._path("alice", memory_type)
-                    content = "\n" + record + "\n"
+                    content = json.dumps(memory.to_dict()) + "\n\n" + record + "\n"
                     path.write_text(content, encoding="utf-8")
-                    with self.assertRaisesRegex(MemoryStoreCorruptionError, ":2"):
+                    with self.assertRaisesRegex(MemoryStoreCorruptionError, ":3"):
                         self.store.list("alice", memory_type)
-                    with self.assertRaises(MemoryStoreCorruptionError):
-                        self.store.add("alice", memory_type, memory)
-                    self.assertEqual(path.read_text(encoding="utf-8"), content)
+                    operations = (
+                        lambda: self.store.add("alice", memory_type, memory),
+                        lambda: self.store.update("alice", memory_type, 0, memory),
+                        lambda: self.store.delete("alice", memory_type, 0),
+                    )
+                    for operation in operations:
+                        with self.assertRaises(MemoryStoreCorruptionError):
+                            operation()
+                        self.assertEqual(path.read_bytes(), content.encode("utf-8"))
 
     def test_invalid_utf8_reports_corruption_without_mutating_file(self):
         path = self.store._path("alice", "persona")
-        original = b"\xff\xfe\n"
+        memory = PersonaMemory("topic", "preference", "strategy")
+        original = json.dumps(memory.to_dict()).encode("utf-8") + b"\n\xff\xfe\n"
         path.write_bytes(original)
         with self.assertRaisesRegex(MemoryStoreCorruptionError, "Invalid UTF-8") as raised:
             self.store.list("alice", "persona")
         self.assertIsInstance(raised.exception.__cause__, UnicodeDecodeError)
-        with self.assertRaises(MemoryStoreCorruptionError):
-            self.store.add("alice", "persona", PersonaMemory("t", "p", "s"))
-        self.assertEqual(path.read_bytes(), original)
+        operations = (
+            lambda: self.store.add("alice", "persona", memory),
+            lambda: self.store.update("alice", "persona", 0, memory),
+            lambda: self.store.delete("alice", "persona", 0),
+        )
+        for operation in operations:
+            with self.assertRaises(MemoryStoreCorruptionError):
+                operation()
+            self.assertEqual(path.read_bytes(), original)
 
     def test_jsonl_store_crud_and_user_path_sanitization(self):
         first = PersonaMemory("paper", "Open source", "Check code")
@@ -180,6 +197,17 @@ class StoreAndMemoryTests(unittest.TestCase):
             rf"Invalid persona memory record at {path}:2",
         ):
             self.store.list("alice", "persona")
+
+    def test_legacy_migration_rejects_nonobjects_and_invalid_utf8(self):
+        user_id = "team/alice"
+        legacy = self.store._legacy_path(user_id, "persona")
+        for content in (b"null\n", b"\xff\n"):
+            with self.subTest(content=content):
+                legacy.write_bytes(content)
+                with self.assertRaises(MemoryStoreCorruptionError):
+                    self.store.migrate_legacy_user_file(user_id, "persona")
+                self.assertEqual(legacy.read_bytes(), content)
+                self.assertFalse(self.store._path(user_id, "persona").exists())
 
     def test_failed_atomic_replace_preserves_existing_memories(self):
         original = PersonaMemory("paper", "Open source", "Check code")
