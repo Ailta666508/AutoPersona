@@ -6,7 +6,7 @@ import os
 import re
 import tempfile
 import threading
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import IO, Iterable, Iterator
 
@@ -15,7 +15,7 @@ try:
 except ImportError:  # pragma: no cover - Windows falls back to the process lock.
     fcntl = None
 
-from .models import Memory, MemoryType, PersonaMemory, TrajectoryMemory, WorkspaceMemory
+from .models import Memory, MemoryBundle, MemoryType, PersonaMemory, TrajectoryMemory, WorkspaceMemory
 
 
 MEMORY_CLASSES = {
@@ -51,6 +51,18 @@ class JsonlMemoryStore:
         with self._lock:
             path = self._path(user_id, memory_type)
             return self._read_path(path, memory_type)
+
+    def snapshot(self, user_id: str) -> MemoryBundle:
+        """Read all three banks while holding their locks in a stable order."""
+        paths = {memory_type: self._path(user_id, memory_type) for memory_type in MEMORY_CLASSES}
+        with self._lock, ExitStack() as stack:
+            for memory_type in sorted(paths):
+                stack.enter_context(self._file_lock(paths[memory_type]))
+            return MemoryBundle(
+                trajectory=self._read_path(paths["trajectory"], "trajectory"),
+                workspace=self._read_path(paths["workspace"], "workspace"),
+                persona=self._read_path(paths["persona"], "persona"),
+            )
 
     def add(self, user_id: str, memory_type: MemoryType, memory: Memory) -> None:
         self.add_many(user_id, memory_type, [memory])

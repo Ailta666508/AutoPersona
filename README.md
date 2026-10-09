@@ -261,3 +261,8 @@ Applications can also override `retrieval_top_k` and
 `retrieval_min_similarity` on an individual `PersonaRequest`, allowing a
 high-risk decision to demand stronger evidence without changing the agent's
 default policy.
+
+`store.snapshot(user_id)` reads trajectory, workspace, and persona banks while
+holding their locks in a stable order. This provides one consistent export
+boundary for backup or evaluation and fails without modifying files if any bank
+is corrupt.
