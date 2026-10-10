@@ -45,3 +45,13 @@ class StoreSnapshotTests(unittest.TestCase):
                 {path: path.read_bytes() for path in Path(directory).rglob("*.jsonl")},
                 before,
             )
+
+    def test_snapshot_fingerprint_changes_only_when_snapshot_content_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = JsonlMemoryStore(directory)
+            first = store.snapshot_fingerprint("alice")
+            store.add("alice", "trajectory", TrajectoryMemory("query", insight="one"))
+            second = store.snapshot_fingerprint("alice")
+            self.assertEqual(len(first), 64)
+            self.assertNotEqual(first, second)
+            self.assertEqual(second, store.snapshot_fingerprint("alice"))

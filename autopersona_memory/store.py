@@ -64,6 +64,14 @@ class JsonlMemoryStore:
                 persona=self._read_path(paths["persona"], "persona"),
             )
 
+    def snapshot_fingerprint(self, user_id: str) -> str:
+        """Return a stable digest for cache keys and export change detection."""
+        bundle = self.snapshot(user_id)
+        canonical = json.dumps(
+            bundle.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        )
+        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
     def add(self, user_id: str, memory_type: MemoryType, memory: Memory) -> None:
         self.add_many(user_id, memory_type, [memory])
 

@@ -266,3 +266,7 @@ default policy.
 holding their locks in a stable order. This provides one consistent export
 boundary for backup or evaluation and fails without modifying files if any bank
 is corrupt.
+
+`store.snapshot_fingerprint(user_id)` returns a SHA-256 digest of that canonical
+snapshot. It can be used as a cache key or to detect whether an export needs to
+be refreshed without exposing memory contents.
