@@ -25,6 +25,15 @@ MEMORY_CLASSES = {
 }
 
 
+def memory_snapshot_fingerprint(bundle: MemoryBundle) -> str:
+    """Hash one captured snapshot; reject non-portable NaN/Infinity values."""
+    canonical = json.dumps(
+        bundle.to_dict(), ensure_ascii=False, allow_nan=False,
+        sort_keys=True, separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 class MemoryStoreError(RuntimeError):
     """Raised when persisted memory cannot be read or written safely."""
 
@@ -66,11 +75,7 @@ class JsonlMemoryStore:
 
     def snapshot_fingerprint(self, user_id: str) -> str:
         """Return a stable digest for cache keys and export change detection."""
-        bundle = self.snapshot(user_id)
-        canonical = json.dumps(
-            bundle.to_dict(), ensure_ascii=False, sort_keys=True, separators=(",", ":")
-        )
-        return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        return memory_snapshot_fingerprint(self.snapshot(user_id))
 
     def add(self, user_id: str, memory_type: MemoryType, memory: Memory) -> None:
         self.add_many(user_id, memory_type, [memory])

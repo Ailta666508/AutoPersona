@@ -270,3 +270,18 @@ is corrupt.
 `store.snapshot_fingerprint(user_id)` returns a SHA-256 digest of that canonical
 snapshot. It can be used as a cache key or to detect whether an export needs to
 be refreshed without exposing memory contents.
+
+### Atomic snapshot export CLI
+
+```bash
+python -m autopersona_memory.export_snapshot ./memory-store alice ./exports/alice.json
+```
+
+The existing store is read under bank locks once; schema version 1, per-bank
+counts, a SHA-256 fingerprint, and the captured memories are written via atomic
+replacement. The fingerprint hashes UTF-8 canonical JSON of `memories` with
+sorted keys and separators `(',', ':')`. Stdout reports only counts and digest.
+Exports contain the selected user's actual memory contents: keep them outside
+public repositories. Destinations inside the memory store are rejected.
+Corrupt input or failure before replacement preserves any prior export. An empty
+user produces an explicitly empty snapshot; export does not imply restore support.
