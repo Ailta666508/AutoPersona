@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from autopersona_memory import JsonlMemoryStore, PersonaMemory, WorkspaceMemory, MemoryStoreError
-from autopersona_memory.export_snapshot import export_snapshot
+from autopersona_memory.export_snapshot import export_snapshot, verify_export
 
 
 class ExportSnapshotTests(unittest.TestCase):
@@ -59,3 +59,20 @@ class ExportSnapshotTests(unittest.TestCase):
             with patch.object(JsonlMemoryStore, "snapshot", return_value=bundle) as capture:
                 export_snapshot(store.root, "alice", Path(directory) / "export.json")
                 capture.assert_called_once_with("alice")
+
+    def test_verifies_export_without_source_store_and_rejects_tampering(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "store"
+            store = JsonlMemoryStore(root)
+            store.add("alice", "persona", PersonaMemory("style", "brief", "short"))
+            target = Path(directory) / "snapshot.json"
+            summary = export_snapshot(root, "alice", target)
+            self.assertEqual(verify_export(target), summary)
+            root.rename(Path(directory) / "source-is-offline")
+            result = subprocess.run([sys.executable, "-m", "autopersona_memory.export_snapshot", "--verify", str(target)], capture_output=True, text=True, check=True)
+            self.assertEqual(json.loads(result.stdout), summary)
+            payload = json.loads(target.read_text())
+            payload["memories"]["persona"][0]["preference"] = "modified"
+            target.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "fingerprint"):
+                verify_export(target)
