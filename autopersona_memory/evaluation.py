@@ -187,6 +187,14 @@ class ClarificationEvaluationReport:
         )
         return self._ratio(exact, len(labeled))
 
+    def quality_gate(self, *, min_accuracy: float = 1.0, min_clarification_recall: float = 1.0) -> dict[str, object]:
+        """Return a deterministic CI gate for labeled clarification evaluations."""
+        thresholds = {"accuracy": (self.accuracy, min_accuracy), "clarification_recall": (self.clarification_recall, min_clarification_recall)}
+        if any(isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= 1 for pair in thresholds.values() for value in pair):
+            raise ValueError("quality gate thresholds and metrics must be in [0, 1]")
+        failures = [name for name, (actual, minimum) in thresholds.items() if actual < minimum]
+        return {"passed": not failures, "failures": failures, "metrics": {name: actual for name, (actual, _) in thresholds.items()}, "thresholds": {name: minimum for name, (_, minimum) in thresholds.items()}}
+
     def to_dict(self) -> dict[str, object]:
         return {
             "case_count": len(self.results),

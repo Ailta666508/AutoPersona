@@ -3,6 +3,8 @@ import subprocess
 import sys
 import unittest
 
+from autopersona_memory.evaluation import ClarificationEvaluationReport, ClarificationEvaluationResult
+
 
 class EvaluationExampleTests(unittest.TestCase):
     def test_public_example_runs_and_exercises_both_decisions(self):
@@ -21,6 +23,17 @@ class EvaluationExampleTests(unittest.TestCase):
             [case["actual_action"] for case in report["cases"]],
             ["final", "clarify"],
         )
+
+    def test_quality_gate_is_ci_friendly(self):
+        report = ClarificationEvaluationReport((
+            ClarificationEvaluationResult("good", "final", "final", None, {"trajectory": 0, "workspace": 0, "persona": 0}),
+            ClarificationEvaluationResult("needed", "clarify", "clarify", None, {"trajectory": 0, "workspace": 0, "persona": 0}),
+        ))
+        self.assertTrue(report.quality_gate()["passed"])
+        failed = ClarificationEvaluationReport((
+            ClarificationEvaluationResult("missed", "clarify", "final", None, {"trajectory": 0, "workspace": 0, "persona": 0}),
+        ))
+        self.assertEqual(failed.quality_gate()["failures"], ["accuracy", "clarification_recall"])
 
 
 if __name__ == "__main__":
