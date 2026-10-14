@@ -19,10 +19,20 @@ class EvaluationExampleTests(unittest.TestCase):
         self.assertEqual(report["accuracy"], 1.0)
         self.assertEqual(report["clarification_precision"], 1.0)
         self.assertEqual(report["clarification_recall"], 1.0)
+        self.assertTrue(report["quality_gate"]["passed"])
         self.assertEqual(
             [case["actual_action"] for case in report["cases"]],
             ["final", "clarify"],
         )
+
+    def test_public_example_rejects_invalid_quality_gate_threshold(self):
+        result = subprocess.run(
+            [sys.executable, "examples/evaluate_retrieval_clarification.py", "--min-accuracy", "1.1"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("thresholds", result.stderr)
 
     def test_quality_gate_is_ci_friendly(self):
         report = ClarificationEvaluationReport((

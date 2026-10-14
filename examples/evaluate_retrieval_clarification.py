@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -22,7 +23,11 @@ def embed(text: str) -> list[float]:
     ]
 
 
-def main() -> None:
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--min-accuracy", type=float, default=1.0)
+    parser.add_argument("--min-clarification-recall", type=float, default=1.0)
+    args = parser.parse_args()
     with TemporaryDirectory(prefix="autopersona-eval-") as directory:
         store = JsonlMemoryStore(Path(directory) / "memory")
         store.add(
@@ -65,8 +70,14 @@ def main() -> None:
             ),
         ]
         report = evaluate_clarification_policy(agent, cases)
-        print(json.dumps(report.to_dict(), indent=2, ensure_ascii=False))
+        payload = report.to_dict()
+        payload["quality_gate"] = report.quality_gate(
+            min_accuracy=args.min_accuracy,
+            min_clarification_recall=args.min_clarification_recall,
+        )
+        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        return 0 if payload["quality_gate"]["passed"] else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
