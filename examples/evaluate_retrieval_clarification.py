@@ -27,6 +27,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--min-accuracy", type=float, default=1.0)
     parser.add_argument("--min-clarification-recall", type=float, default=1.0)
+    parser.add_argument("--output", type=Path, help="also write the JSON report to this path")
     args = parser.parse_args()
     with TemporaryDirectory(prefix="autopersona-eval-") as directory:
         store = JsonlMemoryStore(Path(directory) / "memory")
@@ -76,6 +77,11 @@ def main() -> int:
             min_clarification_recall=args.min_clarification_recall,
         )
         print(json.dumps(payload, indent=2, ensure_ascii=False))
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            temporary = args.output.with_suffix(args.output.suffix + ".tmp")
+            temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            temporary.replace(args.output)
         return 0 if payload["quality_gate"]["passed"] else 1
 
 

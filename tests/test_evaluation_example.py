@@ -2,6 +2,8 @@ import json
 import subprocess
 import sys
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from autopersona_memory.evaluation import ClarificationEvaluationReport, ClarificationEvaluationResult
 
@@ -33,6 +35,13 @@ class EvaluationExampleTests(unittest.TestCase):
         )
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("thresholds", result.stderr)
+
+    def test_public_example_can_write_a_ci_artifact(self):
+        with TemporaryDirectory() as directory:
+            output = Path(directory) / "reports" / "evaluation.json"
+            result = subprocess.run([sys.executable, "examples/evaluate_retrieval_clarification.py", "--output", str(output)], capture_output=True, text=True, check=True)
+            self.assertEqual(json.loads(output.read_text())["quality_gate"]["passed"], True)
+            self.assertIn('"quality_gate"', result.stdout)
 
     def test_quality_gate_is_ci_friendly(self):
         report = ClarificationEvaluationReport((
