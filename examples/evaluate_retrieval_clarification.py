@@ -72,6 +72,8 @@ def main() -> int:
         ]
         report = evaluate_clarification_policy(agent, cases)
         payload = report.to_dict()
+        payload["report_schema_version"] = 1
+        payload["synthetic"] = True
         payload["quality_gate"] = report.quality_gate(
             min_accuracy=args.min_accuracy,
             min_clarification_recall=args.min_clarification_recall,
