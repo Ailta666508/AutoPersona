@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from autopersona_memory import JsonlMemoryStore, MemoryRetriever, PersonaAgent
 from autopersona_memory.evaluation import (
@@ -21,6 +22,24 @@ def embed(text: str) -> list[float]:
         float("concise" in lowered or "brief" in lowered),
         float("citation" in lowered or "source" in lowered),
     ]
+
+
+def write_report(path: Path, payload: dict[str, object]) -> None:
+    """Atomically publish a report without sharing a predictable temp file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary: Path | None = None
+    try:
+        with NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", suffix=".tmp", delete=False) as stream:
+            temporary = Path(stream.name)
+            json.dump(payload, stream, indent=2, ensure_ascii=False)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        temporary.replace(path)
+        temporary = None
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def main() -> int:
@@ -80,10 +99,7 @@ def main() -> int:
         )
         print(json.dumps(payload, indent=2, ensure_ascii=False))
         if args.output:
-            args.output.parent.mkdir(parents=True, exist_ok=True)
-            temporary = args.output.with_suffix(args.output.suffix + ".tmp")
-            temporary.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-            temporary.replace(args.output)
+            write_report(args.output, payload)
         return 0 if payload["quality_gate"]["passed"] else 1
 
 

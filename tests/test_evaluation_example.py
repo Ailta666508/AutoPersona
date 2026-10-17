@@ -42,6 +42,7 @@ class EvaluationExampleTests(unittest.TestCase):
             result = subprocess.run([sys.executable, "examples/evaluate_retrieval_clarification.py", "--output", str(output)], capture_output=True, text=True, check=True)
             self.assertEqual(json.loads(output.read_text())["quality_gate"]["passed"], True)
             self.assertIn('"quality_gate"', result.stdout)
+            self.assertEqual(list(output.parent.glob("*.tmp")), [])
 
     def test_quality_gate_is_ci_friendly(self):
         report = ClarificationEvaluationReport((
