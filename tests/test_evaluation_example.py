@@ -22,6 +22,7 @@ class EvaluationExampleTests(unittest.TestCase):
         self.assertEqual(report["clarification_precision"], 1.0)
         self.assertEqual(report["clarification_recall"], 1.0)
         self.assertTrue(report["quality_gate"]["passed"])
+        self.assertEqual(report["report_contract"]["required"], ["cases", "quality_gate"])
         self.assertEqual(
             [case["actual_action"] for case in report["cases"]],
             ["final", "clarify"],
