@@ -76,3 +76,10 @@ class ExportSnapshotTests(unittest.TestCase):
             target.write_text(json.dumps(payload))
             with self.assertRaisesRegex(ValueError, "fingerprint"):
                 verify_export(target)
+
+    def test_rejects_ambiguous_export_metadata(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "snapshot.json"
+            target.write_text(json.dumps({"schema_version": 1, "fingerprint": "", "counts": {}, "memories": {}, "extra": True}))
+            with self.assertRaisesRegex(ValueError, "unsupported fields"):
+                verify_export(target)

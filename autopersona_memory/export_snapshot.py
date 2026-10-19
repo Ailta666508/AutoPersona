@@ -43,6 +43,8 @@ def verify_export(destination: str | Path) -> dict:
         raise ValueError(f"Unable to read snapshot export: {path}") from error
     if not isinstance(payload, dict) or payload.get("schema_version") != 1:
         raise ValueError("Unsupported snapshot export schema")
+    if set(payload) != {"schema_version", "fingerprint", "counts", "memories"}:
+        raise ValueError("Snapshot export contains unsupported fields")
     memories = payload.get("memories")
     counts = payload.get("counts")
     if not isinstance(memories, dict) or not isinstance(counts, dict):
