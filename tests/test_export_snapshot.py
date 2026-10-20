@@ -83,3 +83,16 @@ class ExportSnapshotTests(unittest.TestCase):
             target.write_text(json.dumps({"schema_version": 1, "fingerprint": "", "counts": {}, "memories": {}, "extra": True}))
             with self.assertRaisesRegex(ValueError, "unsupported fields"):
                 verify_export(target)
+
+    def test_rejects_noncanonical_digest_and_counts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / "snapshot.json"
+            base = {"schema_version": 1, "fingerprint": "not-a-digest", "counts": {"persona": 0, "workspace": 0, "trajectory": 0}, "memories": {"persona": [], "workspace": [], "trajectory": []}}
+            target.write_text(json.dumps(base))
+            with self.assertRaisesRegex(ValueError, "lowercase SHA-256"):
+                verify_export(target)
+            base["fingerprint"] = "0" * 64
+            base["counts"]["persona"] = True
+            target.write_text(json.dumps(base))
+            with self.assertRaisesRegex(ValueError, "counts"):
+                verify_export(target)

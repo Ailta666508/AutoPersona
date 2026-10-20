@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 
 from .models import MemoryBundle
 from .store import MEMORY_CLASSES, JsonlMemoryStore, MemoryStoreError, memory_snapshot_fingerprint
@@ -49,10 +50,16 @@ def verify_export(destination: str | Path) -> dict:
     counts = payload.get("counts")
     if not isinstance(memories, dict) or not isinstance(counts, dict):
         raise ValueError("Snapshot export is missing memories or counts")
+    fingerprint = payload.get("fingerprint")
+    if not isinstance(fingerprint, str) or re.fullmatch(r"[0-9a-f]{64}", fingerprint) is None:
+        raise ValueError("Snapshot export fingerprint must be a lowercase SHA-256 digest")
     if set(memories) != set(MEMORY_CLASSES) or any(not isinstance(rows, list) for rows in memories.values()):
         raise ValueError("Snapshot export memories must contain lists")
     calculated_counts = {bank: len(rows) for bank, rows in memories.items()}
-    if counts != calculated_counts:
+    if counts != calculated_counts or any(
+        not isinstance(value, int) or isinstance(value, bool) or value < 0
+        for value in counts.values()
+    ):
         raise ValueError("Snapshot export counts do not match memories")
     try:
         bundle = MemoryBundle(**{
