@@ -74,18 +74,48 @@ def verify_export(destination: str | Path) -> dict:
     return {"schema_version": 1, "fingerprint": fingerprint, "counts": calculated_counts}
 
 
+def restore_snapshot(root: str | Path, user_id: str, source: str | Path) -> dict:
+    """Restore a verified export into one user scope.
+
+    The complete artifact is validated before any bank is replaced. Each bank
+    then uses the store's atomic replacement and locking path; a failed bank
+    write cannot truncate its previous file.
+    """
+    root_path = Path(root).resolve()
+    if not root_path.is_dir():
+        raise ValueError("Memory root must be an existing directory")
+    source_path = Path(source)
+    summary = verify_export(source_path)
+    payload = json.loads(source_path.read_text(encoding="utf-8"))
+    bundle = MemoryBundle(**{
+        bank: [MEMORY_CLASSES[bank].from_dict(row) for row in payload["memories"][bank]]
+        for bank in MEMORY_CLASSES
+    })
+    store = JsonlMemoryStore(root_path)
+    for bank in MEMORY_CLASSES:
+        store.replace(user_id, bank, getattr(bundle, bank))
+    return summary
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", nargs="?")
     parser.add_argument("user_id", nargs="?")
     parser.add_argument("destination", nargs="?")
     parser.add_argument("--verify", metavar="EXPORT", help="validate an existing export without reading a store")
+    parser.add_argument("--restore", metavar="EXPORT", help="restore a verified export into root/user_id")
     args = parser.parse_args()
     try:
+        if args.verify and args.restore:
+            parser.error("--verify and --restore are mutually exclusive")
         if args.verify:
             if any(value is not None for value in (args.root, args.user_id, args.destination)):
                 parser.error("--verify does not accept root, user_id, or destination")
             summary = verify_export(args.verify)
+        elif args.restore:
+            if args.root is None or args.user_id is None or args.destination is not None:
+                parser.error("--restore requires root and user_id, and no destination positional argument")
+            summary = restore_snapshot(args.root, args.user_id, args.restore)
         else:
             if not all(value is not None for value in (args.root, args.user_id, args.destination)):
                 parser.error("root, user_id, and destination are required unless --verify is used")

@@ -28,6 +28,7 @@ from .store import (
     MemoryStoreError,
     MemoryStoreMigrationError,
 )
+from .export_snapshot import export_snapshot, restore_snapshot, verify_export
 
 __all__ = [
     "ClarificationRequest",
@@ -44,6 +45,9 @@ __all__ = [
     "MemoryStoreCorruptionError",
     "MemoryStoreError",
     "MemoryStoreMigrationError",
+    "export_snapshot",
+    "restore_snapshot",
+    "verify_export",
     "MemoryUpdater",
     "MvpMetrics",
     "PersonaAgent",

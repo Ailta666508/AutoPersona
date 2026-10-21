@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from autopersona_memory import JsonlMemoryStore, PersonaMemory, WorkspaceMemory, MemoryStoreError
-from autopersona_memory.export_snapshot import export_snapshot, verify_export
+from autopersona_memory.export_snapshot import export_snapshot, restore_snapshot, verify_export
 
 
 class ExportSnapshotTests(unittest.TestCase):
@@ -96,3 +96,24 @@ class ExportSnapshotTests(unittest.TestCase):
             target.write_text(json.dumps(base))
             with self.assertRaisesRegex(ValueError, "counts"):
                 verify_export(target)
+
+    def test_restore_validates_before_replacing_all_banks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "store"
+            store = JsonlMemoryStore(root)
+            store.add("alice", "persona", PersonaMemory("style", "old", "keep"))
+            export_path = Path(directory) / "snapshot.json"
+            source = JsonlMemoryStore(Path(directory) / "source")
+            source.add("alice", "persona", PersonaMemory("style", "new", "restore"))
+            source.add("alice", "workspace", WorkspaceMemory(task="restored"))
+            export_snapshot(source.root, "alice", export_path)
+            self.assertEqual(restore_snapshot(root, "alice", export_path)["counts"]["workspace"], 1)
+            restored = JsonlMemoryStore(root).snapshot("alice")
+            self.assertEqual(restored.persona[0].preference, "new")
+            self.assertEqual(restored.workspace[0].task, "restored")
+            payload = json.loads(export_path.read_text())
+            payload["memories"]["persona"][0]["preference"] = "tampered"
+            export_path.write_text(json.dumps(payload))
+            with self.assertRaisesRegex(ValueError, "fingerprint"):
+                restore_snapshot(root, "alice", export_path)
+            self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "new")
