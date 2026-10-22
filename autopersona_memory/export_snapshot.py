@@ -92,8 +92,19 @@ def restore_snapshot(root: str | Path, user_id: str, source: str | Path) -> dict
         for bank in MEMORY_CLASSES
     })
     store = JsonlMemoryStore(root_path)
-    for bank in MEMORY_CLASSES:
-        store.replace(user_id, bank, getattr(bundle, bank))
+    previous = {bank: store.list(user_id, bank) for bank in MEMORY_CLASSES}
+    replaced: list[str] = []
+    try:
+        for bank in MEMORY_CLASSES:
+            store.replace(user_id, bank, getattr(bundle, bank))
+            replaced.append(bank)
+    except Exception as error:
+        try:
+            for bank in replaced:
+                store.replace(user_id, bank, previous[bank])
+        except Exception as rollback_error:
+            raise MemoryStoreError("Snapshot restore failed and rollback was incomplete") from rollback_error
+        raise MemoryStoreError("Snapshot restore failed; previous banks were restored") from error
     return summary
 
 

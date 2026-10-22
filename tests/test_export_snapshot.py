@@ -117,3 +117,24 @@ class ExportSnapshotTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "fingerprint"):
                 restore_snapshot(root, "alice", export_path)
             self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "new")
+
+    def test_restore_rolls_back_banks_when_a_later_replace_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "store"
+            store = JsonlMemoryStore(root)
+            store.add("alice", "persona", PersonaMemory("style", "old", "keep"))
+            export_path = Path(directory) / "snapshot.json"
+            source = JsonlMemoryStore(Path(directory) / "source")
+            source.add("alice", "persona", PersonaMemory("style", "new", "restore"))
+            export_snapshot(source.root, "alice", export_path)
+            original_replace = JsonlMemoryStore.replace
+            calls = []
+            def fail_workspace(self, user_id, memory_type, memories):
+                calls.append(memory_type)
+                if memory_type == "workspace":
+                    raise OSError("synthetic disk failure")
+                return original_replace(self, user_id, memory_type, memories)
+            with patch.object(JsonlMemoryStore, "replace", fail_workspace):
+                with self.assertRaisesRegex(MemoryStoreError, "previous banks were restored"):
+                    restore_snapshot(root, "alice", export_path)
+            self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "old")
