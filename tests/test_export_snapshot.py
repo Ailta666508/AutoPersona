@@ -138,3 +138,13 @@ class ExportSnapshotTests(unittest.TestCase):
                 with self.assertRaisesRegex(MemoryStoreError, "previous banks were restored"):
                     restore_snapshot(root, "alice", export_path)
             self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "old")
+
+    def test_restore_rejects_an_export_inside_the_memory_store(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "store"
+            store = JsonlMemoryStore(root)
+            export_path = root / "snapshot.json"
+            export_snapshot(root, "alice", Path(directory) / "outside.json")
+            export_path.write_text(Path(directory, "outside.json").read_text())
+            with self.assertRaisesRegex(ValueError, "outside"):
+                restore_snapshot(root, "alice", export_path)

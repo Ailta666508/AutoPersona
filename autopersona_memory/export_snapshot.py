@@ -85,6 +85,9 @@ def restore_snapshot(root: str | Path, user_id: str, source: str | Path) -> dict
     if not root_path.is_dir():
         raise ValueError("Memory root must be an existing directory")
     source_path = Path(source)
+    source_resolved = source_path.resolve()
+    if source_resolved == root_path or root_path in source_resolved.parents:
+        raise ValueError("Restore source must be outside the memory store")
     summary = verify_export(source_path)
     payload = json.loads(source_path.read_text(encoding="utf-8"))
     bundle = MemoryBundle(**{
