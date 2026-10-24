@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from autopersona_memory import JsonlMemoryStore, PersonaMemory, WorkspaceMemory, MemoryStoreError
+from autopersona_memory import JsonlMemoryStore, PersonaMemory, TrajectoryMemory, WorkspaceMemory, MemoryStoreError
 from autopersona_memory.export_snapshot import export_snapshot, restore_snapshot, verify_export
 
 
@@ -148,3 +148,34 @@ class ExportSnapshotTests(unittest.TestCase):
             export_path.write_text(Path(directory, "outside.json").read_text())
             with self.assertRaisesRegex(ValueError, "outside"):
                 restore_snapshot(root, "alice", export_path)
+
+    def test_restore_attempts_every_rollback_after_one_rollback_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "store"
+            store = JsonlMemoryStore(root)
+            store.add("alice", "trajectory", TrajectoryMemory(query="old"))
+            store.add("alice", "persona", PersonaMemory("style", "old", "keep"))
+            store.add("alice", "workspace", WorkspaceMemory(task="old"))
+            source = JsonlMemoryStore(Path(directory) / "source")
+            source.add("alice", "trajectory", TrajectoryMemory(query="new"))
+            source.add("alice", "persona", PersonaMemory("style", "new", "restore"))
+            source.add("alice", "workspace", WorkspaceMemory(task="new"))
+            export_path = Path(directory) / "snapshot.json"
+            export_snapshot(source.root, "alice", export_path)
+            original_replace = JsonlMemoryStore.replace
+            calls: list[str] = []
+
+            def fail_forward_and_one_rollback(self, user_id, memory_type, memories):
+                calls.append(memory_type)
+                if memory_type == "persona" and calls.count("persona") == 1:
+                    raise OSError("synthetic forward failure")
+                if memory_type == "workspace" and calls.count("workspace") == 2:
+                    raise OSError("synthetic rollback failure")
+                return original_replace(self, user_id, memory_type, memories)
+
+            with patch.object(JsonlMemoryStore, "replace", fail_forward_and_one_rollback):
+                with self.assertRaisesRegex(MemoryStoreError, "incomplete for 1 bank"):
+                    restore_snapshot(root, "alice", export_path)
+            self.assertEqual(calls[-2:], ["workspace", "trajectory"])
+            self.assertEqual(JsonlMemoryStore(root).snapshot("alice").trajectory[0].query, "old")
+            self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "old")

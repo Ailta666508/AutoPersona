@@ -102,11 +102,16 @@ def restore_snapshot(root: str | Path, user_id: str, source: str | Path) -> dict
             store.replace(user_id, bank, getattr(bundle, bank))
             replaced.append(bank)
     except Exception as error:
-        try:
-            for bank in replaced:
+        rollback_errors: list[Exception] = []
+        for bank in reversed(replaced):
+            try:
                 store.replace(user_id, bank, previous[bank])
-        except Exception as rollback_error:
-            raise MemoryStoreError("Snapshot restore failed and rollback was incomplete") from rollback_error
+            except Exception as rollback_error:
+                rollback_errors.append(rollback_error)
+        if rollback_errors:
+            raise MemoryStoreError(
+                f"Snapshot restore failed and rollback was incomplete for {len(rollback_errors)} bank(s)"
+            ) from rollback_errors[0]
         raise MemoryStoreError("Snapshot restore failed; previous banks were restored") from error
     return summary
 
