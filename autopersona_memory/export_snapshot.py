@@ -116,6 +116,27 @@ def restore_snapshot(root: str | Path, user_id: str, source: str | Path) -> dict
     return summary
 
 
+def preview_restore(root: str | Path, user_id: str, source: str | Path) -> dict:
+    """Compare a verified export with the current user snapshot without writing."""
+    root_path = Path(root).resolve()
+    if not root_path.is_dir():
+        raise ValueError("Memory root must be an existing directory")
+    source_path = Path(source)
+    source_resolved = source_path.resolve()
+    if source_resolved == root_path or root_path in source_resolved.parents:
+        raise ValueError("Restore source must be outside the memory store")
+    incoming = verify_export(source_path)
+    current = JsonlMemoryStore(root_path).snapshot(user_id)
+    current_counts = {bank: len(rows) for bank, rows in current.to_dict().items()}
+    current_fingerprint = memory_snapshot_fingerprint(current)
+    return {
+        "schema_version": 1,
+        "current": {"fingerprint": current_fingerprint, "counts": current_counts},
+        "incoming": incoming,
+        "already_matches": current_fingerprint == incoming["fingerprint"],
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", nargs="?")
@@ -123,10 +144,11 @@ def main() -> None:
     parser.add_argument("destination", nargs="?")
     parser.add_argument("--verify", metavar="EXPORT", help="validate an existing export without reading a store")
     parser.add_argument("--restore", metavar="EXPORT", help="restore a verified export into root/user_id")
+    parser.add_argument("--restore-preview", metavar="EXPORT", help="compare a verified export with root/user_id without writing")
     args = parser.parse_args()
     try:
-        if args.verify and args.restore:
-            parser.error("--verify and --restore are mutually exclusive")
+        if sum(value is not None for value in (args.verify, args.restore, args.restore_preview)) > 1:
+            parser.error("--verify, --restore, and --restore-preview are mutually exclusive")
         if args.verify:
             if any(value is not None for value in (args.root, args.user_id, args.destination)):
                 parser.error("--verify does not accept root, user_id, or destination")
@@ -135,6 +157,10 @@ def main() -> None:
             if args.root is None or args.user_id is None or args.destination is not None:
                 parser.error("--restore requires root and user_id, and no destination positional argument")
             summary = restore_snapshot(args.root, args.user_id, args.restore)
+        elif args.restore_preview:
+            if args.root is None or args.user_id is None or args.destination is not None:
+                parser.error("--restore-preview requires root and user_id, and no destination positional argument")
+            summary = preview_restore(args.root, args.user_id, args.restore_preview)
         else:
             if not all(value is not None for value in (args.root, args.user_id, args.destination)):
                 parser.error("root, user_id, and destination are required unless --verify is used")

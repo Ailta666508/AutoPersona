@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from autopersona_memory import JsonlMemoryStore, PersonaMemory, TrajectoryMemory, WorkspaceMemory, MemoryStoreError
-from autopersona_memory.export_snapshot import export_snapshot, restore_snapshot, verify_export
+from autopersona_memory.export_snapshot import export_snapshot, preview_restore, restore_snapshot, verify_export
 
 
 class ExportSnapshotTests(unittest.TestCase):
@@ -148,6 +148,20 @@ class ExportSnapshotTests(unittest.TestCase):
             export_path.write_text(Path(directory, "outside.json").read_text())
             with self.assertRaisesRegex(ValueError, "outside"):
                 restore_snapshot(root, "alice", export_path)
+
+    def test_restore_preview_compares_verified_export_without_writing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "store"
+            store = JsonlMemoryStore(root)
+            store.add("alice", "persona", PersonaMemory("style", "current", "keep"))
+            source = JsonlMemoryStore(Path(directory) / "source")
+            source.add("alice", "persona", PersonaMemory("style", "incoming", "restore"))
+            export_path = Path(directory) / "snapshot.json"
+            incoming = export_snapshot(source.root, "alice", export_path)
+            report = preview_restore(root, "alice", export_path)
+            self.assertFalse(report["already_matches"])
+            self.assertEqual(report["incoming"], incoming)
+            self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "current")
 
     def test_restore_attempts_every_rollback_after_one_rollback_fails(self):
         with tempfile.TemporaryDirectory() as directory:
