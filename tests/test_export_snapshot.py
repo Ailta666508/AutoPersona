@@ -161,6 +161,8 @@ class ExportSnapshotTests(unittest.TestCase):
             report = preview_restore(root, "alice", export_path)
             self.assertFalse(report["already_matches"])
             self.assertEqual(report["incoming"], incoming)
+            self.assertEqual(report["changes"]["persona"], {"current": 1, "incoming": 1, "delta": 0})
+            self.assertEqual(report["changes"]["workspace"], {"current": 0, "incoming": 0, "delta": 0})
             self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "current")
 
     def test_restore_attempts_every_rollback_after_one_rollback_fails(self):

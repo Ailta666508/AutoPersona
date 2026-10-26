@@ -129,10 +129,20 @@ def preview_restore(root: str | Path, user_id: str, source: str | Path) -> dict:
     current = JsonlMemoryStore(root_path).snapshot(user_id)
     current_counts = {bank: len(rows) for bank, rows in current.to_dict().items()}
     current_fingerprint = memory_snapshot_fingerprint(current)
+    incoming_counts = incoming["counts"]
+    changes = {
+        bank: {
+            "current": current_counts[bank],
+            "incoming": incoming_counts[bank],
+            "delta": incoming_counts[bank] - current_counts[bank],
+        }
+        for bank in MEMORY_CLASSES
+    }
     return {
         "schema_version": 1,
         "current": {"fingerprint": current_fingerprint, "counts": current_counts},
         "incoming": incoming,
+        "changes": changes,
         "already_matches": current_fingerprint == incoming["fingerprint"],
     }
 
