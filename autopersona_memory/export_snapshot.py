@@ -127,6 +127,7 @@ def preview_restore(root: str | Path, user_id: str, source: str | Path) -> dict:
         raise ValueError("Restore source must be outside the memory store")
     incoming = verify_export(source_path)
     current = JsonlMemoryStore(root_path).snapshot(user_id)
+    payload = json.loads(source_path.read_text(encoding="utf-8"))
     current_counts = {bank: len(rows) for bank, rows in current.to_dict().items()}
     current_fingerprint = memory_snapshot_fingerprint(current)
     incoming_counts = incoming["counts"]
@@ -138,11 +139,17 @@ def preview_restore(root: str | Path, user_id: str, source: str | Path) -> dict:
         }
         for bank in MEMORY_CLASSES
     }
+    current_memories = current.to_dict()
+    changed_banks = [
+        bank for bank in MEMORY_CLASSES
+        if current_memories[bank] != payload["memories"][bank]
+    ]
     return {
         "schema_version": 1,
         "current": {"fingerprint": current_fingerprint, "counts": current_counts},
         "incoming": incoming,
         "changes": changes,
+        "changed_banks": changed_banks,
         "already_matches": current_fingerprint == incoming["fingerprint"],
     }
 
