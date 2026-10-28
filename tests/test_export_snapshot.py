@@ -118,6 +118,18 @@ class ExportSnapshotTests(unittest.TestCase):
                 restore_snapshot(root, "alice", export_path)
             self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "new")
 
+    def test_restore_is_a_noop_when_verified_snapshot_already_matches(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "store"
+            store = JsonlMemoryStore(root)
+            store.add("alice", "persona", PersonaMemory("style", "same", "keep"))
+            export_path = Path(directory) / "snapshot.json"
+            export_snapshot(root, "alice", export_path)
+            with patch.object(JsonlMemoryStore, "replace", wraps=store.replace) as replace:
+                result = restore_snapshot(root, "alice", export_path)
+            self.assertTrue(result["already_matches"])
+            replace.assert_not_called()
+
     def test_restore_rolls_back_banks_when_a_later_replace_fails(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "store"

@@ -95,7 +95,10 @@ def restore_snapshot(root: str | Path, user_id: str, source: str | Path) -> dict
         for bank in MEMORY_CLASSES
     })
     store = JsonlMemoryStore(root_path)
-    previous = {bank: store.list(user_id, bank) for bank in MEMORY_CLASSES}
+    previous_snapshot = store.snapshot(user_id)
+    if memory_snapshot_fingerprint(previous_snapshot) == summary["fingerprint"]:
+        return {**summary, "already_matches": True}
+    previous = {bank: getattr(previous_snapshot, bank) for bank in MEMORY_CLASSES}
     replaced: list[str] = []
     try:
         for bank in MEMORY_CLASSES:
