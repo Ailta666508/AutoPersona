@@ -116,7 +116,7 @@ def restore_snapshot(root: str | Path, user_id: str, source: str | Path) -> dict
                 f"Snapshot restore failed and rollback was incomplete for {len(rollback_errors)} bank(s)"
             ) from rollback_errors[0]
         raise MemoryStoreError("Snapshot restore failed; previous banks were restored") from error
-    return summary
+    return {**summary, "already_matches": False}
 
 
 def preview_restore(root: str | Path, user_id: str, source: str | Path) -> dict:
