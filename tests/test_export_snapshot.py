@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from autopersona_memory import JsonlMemoryStore, PersonaMemory, TrajectoryMemory, WorkspaceMemory, MemoryStoreError
+from autopersona_memory import JsonlMemoryStore, PersonaMemory, TrajectoryMemory, WorkspaceMemory, MemoryStoreError, preview_restore as public_preview_restore
 from autopersona_memory.export_snapshot import export_snapshot, preview_restore, restore_snapshot, verify_export
 
 
@@ -179,6 +179,9 @@ class ExportSnapshotTests(unittest.TestCase):
             self.assertEqual(report["changes"]["workspace"], {"current": 0, "incoming": 0, "delta": 0})
             self.assertEqual(report["changed_banks"], ["persona"])
             self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "current")
+
+    def test_restore_preview_is_available_from_the_package_api(self):
+        self.assertIs(public_preview_restore, preview_restore)
 
     def test_restore_attempts_every_rollback_after_one_rollback_fails(self):
         with tempfile.TemporaryDirectory() as directory:
