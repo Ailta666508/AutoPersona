@@ -178,6 +178,13 @@ class ExportSnapshotTests(unittest.TestCase):
             self.assertEqual(report["changes"]["persona"], {"current": 1, "incoming": 1, "delta": 0})
             self.assertEqual(report["changes"]["workspace"], {"current": 0, "incoming": 0, "delta": 0})
             self.assertEqual(report["changed_banks"], ["persona"])
+            self.assertFalse(report["banks"]["persona"]["matches"])
+            self.assertTrue(report["banks"]["workspace"]["matches"])
+            self.assertNotEqual(
+                report["banks"]["persona"]["current_fingerprint"],
+                report["banks"]["persona"]["incoming_fingerprint"],
+            )
+            self.assertRegex(report["banks"]["persona"]["current_fingerprint"], r"^[0-9a-f]{64}$")
             self.assertEqual(JsonlMemoryStore(root).snapshot("alice").persona[0].preference, "current")
 
     def test_restore_preview_is_available_from_the_package_api(self):

@@ -6,12 +6,23 @@ The output contains memory contents. Stdout contains only counts and a digest.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
 
 from .models import MemoryBundle
 from .store import MEMORY_CLASSES, JsonlMemoryStore, MemoryStoreError, memory_snapshot_fingerprint
+
+
+def _bank_fingerprint(rows: list[dict]) -> str:
+    """Return a stable content fingerprint for one memory bank.
+
+    Preview output intentionally exposes only a digest: callers can identify a
+    same-count change without returning memory content to logs or UIs.
+    """
+    canonical = json.dumps(rows, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def export_snapshot(root: str | Path, user_id: str, destination: str | Path) -> dict:
@@ -134,6 +145,7 @@ def preview_restore(root: str | Path, user_id: str, source: str | Path) -> dict:
     current_counts = {bank: len(rows) for bank, rows in current.to_dict().items()}
     current_fingerprint = memory_snapshot_fingerprint(current)
     incoming_counts = incoming["counts"]
+    incoming_memories = payload["memories"]
     changes = {
         bank: {
             "current": current_counts[bank],
@@ -143,15 +155,25 @@ def preview_restore(root: str | Path, user_id: str, source: str | Path) -> dict:
         for bank in MEMORY_CLASSES
     }
     current_memories = current.to_dict()
+    banks = {
+        bank: {
+            **changes[bank],
+            "current_fingerprint": _bank_fingerprint(current_memories[bank]),
+            "incoming_fingerprint": _bank_fingerprint(incoming_memories[bank]),
+            "matches": current_memories[bank] == incoming_memories[bank],
+        }
+        for bank in MEMORY_CLASSES
+    }
     changed_banks = [
         bank for bank in MEMORY_CLASSES
-        if current_memories[bank] != payload["memories"][bank]
+        if not banks[bank]["matches"]
     ]
     return {
         "schema_version": 1,
         "current": {"fingerprint": current_fingerprint, "counts": current_counts},
         "incoming": incoming,
         "changes": changes,
+        "banks": banks,
         "changed_banks": changed_banks,
         "already_matches": current_fingerprint == incoming["fingerprint"],
     }
